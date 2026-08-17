@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "../../tokens.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
@@ -8,8 +11,23 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plus-jakarta);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Hallmark · Cobalt */
+  --color-paper: var(--hm-paper);
+  --color-paper-2: var(--hm-paper-2);
+  --color-ink: var(--hm-ink);
+  --color-ink-2: var(--hm-ink-2);
+  --color-ink-3: var(--hm-ink-3);
+  --color-accent: var(--hm-accent);
+  --color-accent-2: var(--hm-accent-2);
+  --color-accent-soft: var(--hm-accent-soft);
+  --color-line: var(--hm-line);
+  --color-focus: var(--hm-focus);
+  --ease-hm: var(--hm-ease-out);
+  --ease-hm-in: var(--hm-ease-in);
+  --ease-hm-inout: var(--hm-ease-inout);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +41,75 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Hallmark · base */
+html,
+body {
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--hm-accent-soft);
+  color: var(--hm-ink);
+}
+
+.hm-rise {
+  animation: hm-rise 220ms var(--hm-ease-out) both;
+}
+
+@keyframes hm-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 150ms !important;
+  }
+}
+
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9; /* slate-100 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 */
+}
+
+/* Dark Mode Scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b; /* slate-800 */
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
 }

@@ -33,9 +33,23 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# credentials
+credentials.txt
+
+# tool mimo (working dir)
+.mimocode
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# binary tooling (jangan pernah commit ke repo)
+*.exe
+*.wasm
+
+# artefak pengembangan lokal
+/screenshots/
+/public/references/

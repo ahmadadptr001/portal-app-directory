@@ -1,0 +1,72 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4 */
+/* Hallmark · macrostructure: Long Document · tone: technical · anchor hue: cool-blue
+ * theme: Cobalt (modern-minimal) · paper: mid-light cool · accent: cool
+ * Fonts: Plus Jakarta Sans (single family — konsisten dengan seluruh aplikasi)
+ *
+ * Raw tokens dipakai lewat mapping @theme inline di src/app/globals.css:
+ *   --color-paper → bg-paper · --color-accent → text/bg/border-accent · --font-display → font-display
+ * Override dark mode via class `.dark` (mengikuti strategi dark mode project).
+ */
+
+:root {
+  --hm-paper: oklch(98.5% 0.005 250);
+  --hm-paper-2: oklch(100% 0 0);
+  --hm-ink: oklch(20% 0.028 258);
+  --hm-ink-2: oklch(46% 0.025 258);
+  --hm-ink-3: oklch(56% 0.02 250);
+  --hm-accent: oklch(50% 0.19 258);
+  --hm-accent-2: oklch(43% 0.19 260);
+  --hm-accent-soft: oklch(96% 0.018 255);
+  --hm-line: oklch(90% 0.012 250);
+  --hm-focus: oklch(58% 0.17 258);
+
+  --hm-space-1: 4px;
+  --hm-space-2: 8px;
+  --hm-space-3: 12px;
+  --hm-space-4: 16px;
+  --hm-space-5: 20px;
+  --hm-space-6: 24px;
+  --hm-space-8: 32px;
+  --hm-space-10: 40px;
+  --hm-space-12: 48px;
+  --hm-space-16: 64px;
+
+  --hm-text-xs: 0.75rem;
+  --hm-text-sm: 0.875rem;
+  --hm-text-base: 1rem;
+  --hm-text-lg: 1.125rem;
+  --hm-text-xl: 1.25rem;
+  --hm-text-2xl: 1.5rem;
+  --hm-text-3xl: 1.875rem;
+  --hm-text-4xl: 2.25rem;
+  --hm-text-display: 3rem;
+
+  --hm-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --hm-ease-in: cubic-bezier(0.55, 0, 0.55, 0.2);
+  --hm-ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --hm-dur-fast: 150ms;
+  --hm-dur: 220ms;
+  --hm-dur-slow: 320ms;
+
+  --hm-rule-hair: 1px;
+  --hm-rule-2: 2px;
+
+  --hm-radius-sm: 6px;
+  --hm-radius-md: 10px;
+  --hm-radius-lg: 14px;
+  --hm-radius-pill: 999px;
+}
+
+.dark {
+  --hm-paper: oklch(15% 0.018 260);
+  --hm-paper-2: oklch(18.5% 0.022 260);
+  --hm-ink: oklch(93% 0.008 250);
+  --hm-ink-2: oklch(71% 0.014 255);
+  --hm-ink-3: oklch(54% 0.02 255);
+  --hm-accent: oklch(70% 0.145 258);
+  --hm-accent-2: oklch(76% 0.135 258);
+  --hm-accent-soft: oklch(25% 0.06 258);
+  --hm-line: oklch(28% 0.024 260);
+  --hm-focus: oklch(72% 0.14 258);
+}
