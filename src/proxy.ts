@@ -34,5 +34,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|img|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest).*)'],
+  // Rute metadata ikon (favicon.ico, icon.png, opengraph-image.png) dikecualikan
+  // agar favicon & kartu OG tetap bisa diakses crawler/pengunjung yang belum login.
+  matcher: ['/((?!api|_next/static|_next/image|img|favicon.ico|icon.png$|opengraph-image.png$|robots.txt|sitemap.xml|manifest.webmanifest).*)'],
 }

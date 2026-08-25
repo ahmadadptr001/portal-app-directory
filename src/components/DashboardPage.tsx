@@ -228,9 +228,16 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
           sizes="(max-width: 1280px) 100vw, 1280px"
         />
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-slate-950/25"></div>
+        {/* Watermark lambang Sulawesi Tenggara — aksen identitas, tidak mengganggu teks */}
+        <img
+          src="/img/logo-sultra.svg"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none select-none absolute -right-4 -bottom-12 w-52 sm:w-64 opacity-15 hidden sm:block"
+        />
         <div className="relative p-6 sm:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300">Portal Direktori Aplikasi</p>
-          <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-white tracking-tight">Ringkasan Sistem</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300">Pemerintah Provinsi Sulawesi Tenggara</p>
+          <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-white tracking-tight">Portal Direktori Aplikasi</h1>
           <p className="mt-1 text-sm text-slate-300 max-w-xl">Metrik aplikasi yang dikelola di lingkungan Kominfo Provinsi Sulawesi Tenggara.</p>
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl">
             {heroStats.map((s) => (

@@ -82,6 +82,11 @@ export default function ClientLayout({ children, appCount, appEnv }: { children:
         <Topbar title={pageTitle} toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} isDark={isDark} toggleTheme={toggleTheme} />
         <div className="flex-1 overflow-y-auto p-6">
           {children}
+          {/* Footer identitas daerah — informatif, tidak mengganggu konten */}
+          <footer className="mt-4 pt-4 border-t border-slate-200/70 dark:border-slate-800/70 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
+            <img src="/img/logo-sultra.svg" alt="" aria-hidden="true" className="w-4 h-4 object-contain" />
+            <span>© <span suppressHydrationWarning>{new Date().getFullYear()}</span> Dinas Komunikasi dan Informatika — Provinsi Sulawesi Tenggara</span>
+          </footer>
         </div>
       </main>
     </div>

@@ -53,3 +53,6 @@ next-env.d.ts
 # artefak pengembangan lokal
 /screenshots/
 /public/references/
+
+# python (script generator aset)
+__pycache__/

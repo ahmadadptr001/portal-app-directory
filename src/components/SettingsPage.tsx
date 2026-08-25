@@ -240,7 +240,7 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
       const apps = appsRes.ok ? (appsData.apps ?? []) : [];
       const categories = catsRes.ok ? (catsData.categories ?? []) : [];
       const payload = {
-        app: "Portal Direktori Aplikasi",
+        app: "Portal Direktori Aplikasi — Provinsi Sulawesi Tenggara",
         exportedAt: new Date().toISOString(),
         categories,
         apps,

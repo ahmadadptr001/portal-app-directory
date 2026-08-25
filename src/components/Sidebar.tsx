@@ -70,12 +70,15 @@ export default function Sidebar({ activePage, isOpen, toggle, appCount, appEnv }
       
       <div className={`flex items-center transition-all duration-300 ease-in-out ${isOpen ? 'px-4 justify-between' : 'px-0 justify-center'} py-5 border-b border-slate-200 dark:border-slate-800/50`}>
         <div className={`flex items-center ${isOpen ? 'gap-3' : 'gap-0'}`}>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 shadow-md shadow-blue-500/20">
-            <i className="fas fa-cube"></i>
-          </div>
+          {/* Lambang Provinsi Sulawesi Tenggara (aset: public/img/logo-sultra.svg) */}
+          <img
+            src="/img/logo-sultra.svg"
+            alt="Lambang Provinsi Sulawesi Tenggara"
+            className="w-9 h-9 object-contain flex-shrink-0"
+          />
           <div className={`transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-            <p className="text-sm font-bold text-slate-800 dark:text-white tracking-tight">Portal App</p>
-            <p className="text-xs text-slate-400">Directory</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-white tracking-tight leading-tight">Direktori Aplikasi</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-tight">Provinsi Sulawesi Tenggara</p>
           </div>
         </div>
         <button onClick={toggle} className={`text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'} md:hidden`}>

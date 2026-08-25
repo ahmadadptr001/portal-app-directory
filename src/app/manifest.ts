@@ -2,10 +2,10 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Portal Direktori Aplikasi v2',
-    short_name: 'Portal Apps',
+    name: 'Portal Direktori Aplikasi — Provinsi Sulawesi Tenggara',
+    short_name: 'Direktori Sultra',
     description:
-      'Portal Direktori Aplikasi v2 — Kelola dan jelajahi daftar aplikasi dengan mudah.',
+      'Portal Direktori Aplikasi Pemerintah Provinsi Sulawesi Tenggara — kelola dan jelajahi daftar aplikasi daerah dengan mudah.',
     start_url: '/',
     display: 'standalone',
     background_color: '#f8fafc',
@@ -13,9 +13,9 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'id',
     icons: [
       {
-        src: '/icon.png',
-        sizes: '32x32',
-        type: 'image/png',
+        src: '/favicon.ico',
+        sizes: 'any',
+        type: 'image/x-icon',
       },
     ],
   }

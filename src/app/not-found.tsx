@@ -23,9 +23,12 @@ export default function NotFound() {
           </div>
         </div>
 
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold mx-auto mb-5 shadow-lg shadow-blue-500/20">
-          <i className="fas fa-cube"></i>
-        </div>
+        {/* Lambang Provinsi Sulawesi Tenggara (aset: public/img/logo-sultra.svg) */}
+        <img
+          src="/img/logo-sultra.svg"
+          alt="Lambang Provinsi Sulawesi Tenggara"
+          className="w-14 h-14 object-contain mx-auto mb-5"
+        />
 
         <p className="text-5xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400">
           404

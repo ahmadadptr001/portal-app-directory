@@ -6,11 +6,12 @@ import { getAllApps } from '@/lib/apps';
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://portal-app-directory.vercel.app"),
-  title: "Portal Direktori Aplikasi v2",
-  description: "Portal Direktori Aplikasi v2 — Kelola dan jelajahi daftar aplikasi dengan mudah.",
+  title: "Portal Direktori Aplikasi | Provinsi Sulawesi Tenggara",
+  description:
+    "Portal Direktori Aplikasi Pemerintah Provinsi Sulawesi Tenggara — kelola dan jelajahi daftar aplikasi daerah dengan mudah.",
   openGraph: {
-    title: "Portal Direktori Aplikasi v2",
-    description: "Kelola dan jelajahi daftar aplikasi dengan mudah.",
+    title: "Portal Direktori Aplikasi | Provinsi Sulawesi Tenggara",
+    description: "Kelola dan jelajahi daftar aplikasi Pemerintah Provinsi Sulawesi Tenggara.",
     type: "website",
     locale: "id_ID",
   },
