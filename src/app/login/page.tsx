@@ -47,11 +47,12 @@ export default function LoginPage() {
       {/* Scrim sangat tipis — foto tampil transparan & bersih */}
       <div aria-hidden="true" className="absolute inset-0 bg-white/10"></div>
 
-      {/* Panel login — sidebar fixed kiri menempel pada tepi layar.
-          Responsif: penuh di layar kecil, lebar tetap di layar besar.
-          Sudut kiri atas & kiri bawah dibuat melengkung sedikit. */}
-      <aside className="fixed left-0 top-0 z-10 flex h-full w-full sm:w-[420px] lg:w-[460px] flex-col justify-center overflow-y-auto bg-white/85 backdrop-blur-md border-r border-white/60 shadow-2xl shadow-slate-900/20 rounded-tl-[20px] rounded-bl-[20px]">
-        <div className="px-6 py-10 sm:px-10">
+      {/* Panel login — sidebar fixed kanan menempel pada tepi layar (desktop),
+          bottom sheet di layar kecil (mobile). Responsif mengikuti ukuran layar:
+          - Mobile: menempel di bawah, sudut kiri-atas & kanan-atas melengkung.
+          - Desktop: menempel di kanan, sudut kiri-atas & kiri-bawah melengkung. */}
+      <aside className="fixed inset-x-0 bottom-0 z-10 flex max-h-[92vh] flex-col justify-center overflow-y-auto rounded-tl-[20px] rounded-tr-[20px] border-t border-white/60 bg-white/85 shadow-2xl shadow-slate-900/20 backdrop-blur-md sm:inset-x-auto sm:bottom-0 sm:right-0 sm:top-0 sm:h-full sm:max-h-none sm:w-[420px] sm:rounded-bl-[20px] sm:rounded-br-none sm:rounded-tr-none sm:border-l sm:border-t-0 lg:w-[460px]">
+        <div className="px-6 pb-10 pt-8 sm:px-10 sm:py-10">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Lambang + nama aplikasi + ringkasan singkat */}
             <div className="text-center pb-5 border-b border-slate-200/70">
