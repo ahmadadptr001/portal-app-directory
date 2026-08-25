@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { App } from '@/types';
 import { useRealtime } from '@/hooks/useRealtime';
+import { useRole } from '@/hooks/useRole';
 import { addCustomTechnology, getCustomTechnologies, removeCustomTechnology, renameCustomTechnology, saveCustomTechnologies } from '@/lib/customTech';
 import SearchAutocomplete from './SearchAutocomplete';
 
@@ -12,7 +13,7 @@ interface TechnologiesPageProps {
   technologies: string[];
 }
 
-const availableGradients = ['from-sky-400 to-blue-500', 'from-violet-400 to-purple-500', 'from-emerald-400 to-teal-500', 'from-amber-400 to-orange-500', 'from-rose-400 to-pink-500', 'from-indigo-400 to-violet-500', 'from-cyan-400 to-sky-500', 'from-lime-400 to-green-500'];
+const availableGradients = ['from-sky-400 to-blue-500', 'from-blue-400 to-purple-500', 'from-emerald-400 to-teal-500', 'from-amber-400 to-orange-500', 'from-rose-400 to-pink-500', 'from-blue-400 to-blue-400', 'from-cyan-400 to-sky-500', 'from-lime-400 to-green-500'];
 
 export default function TechnologiesPage({ apps, technologies }: TechnologiesPageProps) {
   const router = useRouter();
@@ -24,6 +25,10 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
   };
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTech, setEditingTech] = useState<string | null>(null);
+
+  // Peran sesi — hanya untuk menyembunyikan tombol yang pasti ditolak server.
+  const role = useRole();
+  const canManage = role !== 'viewer';
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [localApps, setLocalApps] = useState<App[]>(apps);
   const [localTech, setLocalTech] = useState<string[]>(technologies);
@@ -255,9 +260,11 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
             placeholder="Cari nama teknologi..."
             className="flex-1 sm:flex-none sm:w-64 min-w-[180px]"
           />
-          <button onClick={() => { setEditingTech(null); setFormData({ name: '' }); setFormError(null); setShowAddModal(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium shrink-0">
-            <i className="fas fa-plus"></i> <span className="hidden sm:inline">Tambah Teknologi</span>
-          </button>
+          {canManage && (
+            <button onClick={() => { setEditingTech(null); setFormData({ name: '' }); setFormError(null); setShowAddModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 flex items-center gap-2 text-sm font-medium shrink-0">
+              <i className="fas fa-plus"></i> <span className="hidden sm:inline">Tambah Teknologi</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -272,7 +279,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
           </p>
           <button
             onClick={() => setSearchQuery('')}
-            className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <i className="fas fa-rotate-left"></i> Hapus pencarian
           </button>
@@ -291,8 +298,12 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
                       <i className="fas fa-microchip text-lg"></i>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={(e) => { e.stopPropagation(); handleEdit(tech); }} className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"><i className="fas fa-pen text-xs"></i></button>
-                      <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(tech); }} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"><i className="fas fa-trash text-xs"></i></button>
+                      {canManage && (
+                        <>
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(tech); }} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"><i className="fas fa-pen text-xs"></i></button>
+                          <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(tech); }} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"><i className="fas fa-trash text-xs"></i></button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{tech}</h3>
@@ -311,7 +322,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
                     ))}
                   </div>
                   {count > 3 && <p className="text-xs text-slate-400 mt-2">+{count - 3} lainnya</p>}
-                  <div className="mt-3 flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400">
+                  <div className="mt-3 flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                     Klik untuk lihat detail <i className="fas fa-arrow-right text-[10px]"></i>
                   </div>
                 </div>
@@ -333,7 +344,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
               <button
                 onClick={() => goToPage(safePage - 1)}
                 disabled={safePage <= 1}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Halaman sebelumnya"
               >
                 <i className="fas fa-chevron-left text-[10px]"></i>
@@ -346,7 +357,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
                     key={item}
                     onClick={() => goToPage(item)}
                     aria-current={item === safePage ? 'page' : undefined}
-                    className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${item === safePage ? 'bg-indigo-600 text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
+                    className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${item === safePage ? 'bg-blue-600 text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400'}`}
                     aria-label={`Halaman ${item}`}
                   >
                     {item}
@@ -356,7 +367,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
               <button
                 onClick={() => goToPage(safePage + 1)}
                 disabled={safePage >= totalPages}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Halaman berikutnya"
               >
                 <i className="fas fa-chevron-right text-[10px]"></i>
@@ -381,7 +392,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
                   const v = Number(e.target.value);
                   if (v && v !== safePage) goToPage(Math.round(v));
                 }}
-                className="w-12 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-center text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 tabular-nums"
+                className="w-12 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-center text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 tabular-nums"
                 aria-label="Lompat ke halaman"
               />
             </div>
@@ -390,7 +401,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-8 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-2.5 pr-7 text-xs text-slate-600 dark:text-slate-300 outline-none transition-shadow focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 cursor-pointer"
+                className="h-8 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-2.5 pr-7 text-xs text-slate-600 dark:text-slate-300 outline-none transition-shadow focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer"
                 aria-label="Jumlah teknologi per halaman"
               >
                 {[8, 12, 16, 24].map(n => (
@@ -415,7 +426,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div>
                 <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Nama Teknologi</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="cth. Next.js" className="w-full bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" autoFocus />
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="cth. Next.js" className="w-full bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent" autoFocus />
                 {!editingTech && (
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">Disimpan di browser ini — langsung muncul di pilihan form aplikasi, dan tersimpan permanen di database begitu dipakai oleh sebuah aplikasi.</p>
                 )}
@@ -428,7 +439,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
               )}
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => { setShowAddModal(false); setEditingTech(null); }} className="px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-60" disabled={saving}>Batal</button>
-                <button type="submit" disabled={saving} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                <button type="submit" disabled={saving} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
                   {saving && <i className="fas fa-spinner fa-spin text-xs"></i>}
                   {saving ? 'Menyimpan...' : editingTech ? 'Simpan' : 'Tambah'}
                 </button>
@@ -491,7 +502,7 @@ export default function TechnologiesPage({ apps, technologies }: TechnologiesPag
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{app.description}</p>
                   </div>
                   <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${app.status === 'active' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{app.status}</span>
-                  <i className="fas fa-arrow-right text-xs text-slate-300 dark:text-slate-600 group-hover/app:text-indigo-500 transition-colors"></i>
+                  <i className="fas fa-arrow-right text-xs text-slate-300 dark:text-slate-600 group-hover/app:text-blue-500 transition-colors"></i>
                 </div>
               ))}
             </div>

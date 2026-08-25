@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { App } from "@/types";
+import { statusLabel, statusStyle } from "@/lib/appMeta";
+import ChangelogSection from "./ChangelogSection";
+import { useRole } from "@/hooks/useRole";
 
 interface DetailDrawerProps {
   app: App | null;
@@ -80,9 +83,9 @@ export default function DetailDrawer({ app: appProp, onClose, onDelete, onEdit }
             <div>
               <span className="text-slate-500 dark:text-slate-400 block mb-1">Status</span>
               <span
-                className={`font-medium px-2 py-0.5 rounded-full text-xs ${app.status === "active" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}
+                className={`font-medium px-2 py-0.5 rounded-full text-xs ${statusStyle(app.status).pill}`}
               >
-                {app.status}
+                {statusLabel(app.status)}
               </span>
             </div>
             <div>
@@ -138,7 +141,7 @@ export default function DetailDrawer({ app: appProp, onClose, onDelete, onEdit }
             </div>
             <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
               <div
-                className="bg-indigo-600 h-2 rounded-full"
+                className="bg-blue-600 h-2 rounded-full"
                 style={{ width: `${app.progress}%` }}
               ></div>
             </div>
@@ -158,23 +161,127 @@ export default function DetailDrawer({ app: appProp, onClose, onDelete, onEdit }
               ))}
             </div>
           </div>
+
+          {/* --- Riwayat versi (tabel app_changelogs, migrasi 08) --- */}
+          <ChangelogSection appId={app.id} />
+
+          {/* --- Profil publik (migrasi 07) --- */}
+          <div>
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              Profil Publik
+            </h4>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                    app.isPublic
+                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                      : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  <i className={`fas ${app.isPublic ? "fa-globe" : "fa-lock"} text-[10px]`}></i>
+                  {app.isPublic ? "Tampil publik" : "Internal"}
+                </span>
+                {app.isPublic && app.slug && (
+                  <a
+                    href={`/katalog/${app.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    Lihat di katalog
+                    <i className="fas fa-arrow-up-right-from-square text-[9px]"></i>
+                  </a>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Go-Live</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {app.goLiveDate || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Kontak</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {app.contactName || "-"}
+                  </span>
+                </div>
+              </div>
+
+              {(app.contactEmail || app.contactPhone) && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                  {app.contactEmail && (
+                    <span>
+                      <i className="fas fa-envelope mr-1.5"></i>
+                      {app.contactEmail}
+                    </span>
+                  )}
+                  {app.contactPhone && (
+                    <span>
+                      <i className="fas fa-phone mr-1.5"></i>
+                      {app.contactPhone}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {app.screenshots && app.screenshots.length > 0 && (
+                <div>
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1.5 text-xs">
+                    Screenshot ({app.screenshots.length})
+                  </span>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {app.screenshots.map((s, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element -- URL remote dari admin: host sembarang, tidak bisa didaftarkan di images.remotePatterns
+                      <img
+                        key={`${s.url}-${i}`}
+                        src={s.url}
+                        alt={s.caption || `Screenshot ${i + 1}`}
+                        loading="lazy"
+                        className="h-16 w-auto rounded-md border border-slate-200 dark:border-slate-700 object-cover shrink-0"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="p-5 border-t border-slate-200 dark:border-slate-700 flex gap-3">
-          <button onClick={() => onEdit(app)} className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center justify-center gap-2">
-            <i className="fas fa-edit"></i> Edit
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm(`Hapus aplikasi "${app.name}"? Tindakan ini tidak dapat dibatalkan.`)) {
-                onDelete(app.id);
-              }
-            }}
-            className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 px-4 py-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-sm font-medium flex items-center justify-center gap-2"
-          >
-            <i className="fas fa-trash"></i> Hapus
-          </button>
-        </div>
+        <DrawerFooter onEdit={onEdit} onDelete={onDelete} app={app} />
       </div>
+    </div>
+  );
+}
+
+/** Tombol aksi bawah — disembunyikan untuk `viewer` (server menolaknya juga). */
+function DrawerFooter({
+  onEdit,
+  onDelete,
+  app,
+}: {
+  onEdit: (app: App) => void;
+  onDelete: (id: number) => void;
+  app: App;
+}) {
+  const role = useRole();
+  if (role === "viewer") return null;
+  return (
+    <div className="p-5 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+      <button onClick={() => onEdit(app)} className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center justify-center gap-2">
+        <i className="fas fa-edit"></i> Edit
+      </button>
+      <button
+        onClick={() => {
+          if (window.confirm(`Hapus aplikasi "${app.name}"? Tindakan ini tidak dapat dibatalkan.`)) {
+            onDelete(app.id);
+          }
+        }}
+        className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 px-4 py-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-sm font-medium flex items-center justify-center gap-2"
+      >
+        <i className="fas fa-trash"></i> Hapus
+      </button>
     </div>
   );
 }

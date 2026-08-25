@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createApp, getAllApps, getSessionAdmin, getSessionAdminId, logActivity } from '@/lib/apps'
+import { createApp, getAllApps, getSessionAdminId, logActivity } from '@/lib/apps'
+import { requireRole } from '@/lib/roles'
+import { revalidateKatalog } from '@/lib/public'
 import { validateAppInput } from '@/lib/validate'
 import { assertSameOrigin, isBodyTooLarge } from '@/lib/security'
 
@@ -24,10 +26,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ukuran body terlalu besar' }, { status: 413 })
   }
 
-  const admin = await getSessionAdmin(request)
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Mutasi butuh peran `admin` ke atas. `viewer` sengaja dilarang di SERVER
+  // (bukan cuma disembunyikan tombolnya) — lihat ATURAN EMAS di roles.ts.
+  const gate = await requireRole(request, 'admin')
+  if (!gate.ok) return gate.response
 
   try {
     let body: unknown
@@ -45,13 +47,14 @@ export async function POST(request: NextRequest) {
 
     const app = await createApp(parsed.value)
     await logActivity({
-      adminId: admin.id,
-      username: admin.username,
+      adminId: gate.admin.id,
+      username: gate.admin.username,
       action: 'create',
       entityType: 'app',
       entityName: app.name,
       entityId: app.id,
     })
+    revalidateKatalog()
     return NextResponse.json({ app }, { status: 201 })
   } catch (e) {
     const message = (e as Error)?.message

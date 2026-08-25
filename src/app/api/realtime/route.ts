@@ -5,7 +5,17 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const WATCHED_TABLES = ['apps', 'app_tech', 'categories', 'activity_logs'] as const
+const WATCHED_TABLES = [
+  'apps',
+  'app_tech',
+  'app_screenshots',
+  'categories',
+  'activity_logs',
+  // Tabel baru migrasi 08 — sudah didaftarkan ke publikasi supabase_realtime
+  // oleh migrasi tersebut.
+  'login_logs',
+  'app_changelogs',
+] as const
 
 // Server-Sent Events: aliran perubahan database (postgres_changes) menuju browser.
 // Koneksi dibuat per tab admin; event hanya sinyal — klien memanggil ulang
@@ -23,7 +33,14 @@ export async function GET(request: NextRequest) {
     start(controller) {
       const send = (data: unknown) => {
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+          // `event: change` WAJIB ada. Klien (`useRealtime`) mendengarkan
+          // lewat `addEventListener('change', ...)`, sedangkan frame SSE
+          // tanpa baris `event:` sampai sebagai event bernama `message` —
+          // jadi tanpa baris ini tidak satu pun event realtime pernah
+          // memicu refetch, dan yang bekerja cuma polling 10 detik.
+          controller.enqueue(
+            encoder.encode(`event: change\ndata: ${JSON.stringify(data)}\n\n`)
+          )
         } catch {
           // koneksi sudah ditutup
         }

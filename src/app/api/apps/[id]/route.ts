@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteApp, getSessionAdmin, logActivity, updateApp } from '@/lib/apps'
+import { deleteApp, logActivity, updateApp } from '@/lib/apps'
+import { requireRole } from '@/lib/roles'
+import { revalidateKatalog } from '@/lib/public'
 import { supabaseAdmin } from '@/lib/supabase'
 import { validateAppInput } from '@/lib/validate'
 import { assertSameOrigin, isBodyTooLarge } from '@/lib/security'
@@ -21,10 +23,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'Ukuran body terlalu besar' }, { status: 413 })
   }
 
-  const admin = await getSessionAdmin(request)
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Mutasi butuh peran `admin` ke atas — ditegakkan di SERVER (roles.ts).
+  const gate = await requireRole(request, 'admin')
+  if (!gate.ok) return gate.response
 
   try {
     const numericId = await parseId(params)
@@ -46,13 +47,14 @@ export async function PATCH(
 
     const app = await updateApp(numericId, parsed.value)
     await logActivity({
-      adminId: admin.id,
-      username: admin.username,
+      adminId: gate.admin.id,
+      username: gate.admin.username,
       action: 'update',
       entityType: 'app',
       entityName: app.name,
       entityId: app.id,
     })
+    revalidateKatalog()
     return NextResponse.json({ app })
   } catch (e) {
     const message = (e as Error)?.message
@@ -77,10 +79,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'Permintaan lintas-situs ditolak' }, { status: 403 })
   }
 
-  const admin = await getSessionAdmin(request)
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Mutasi butuh peran `admin` ke atas — ditegakkan di SERVER (roles.ts).
+  const gate = await requireRole(request, 'admin')
+  if (!gate.ok) return gate.response
 
   try {
     const numericId = await parseId(params)
@@ -97,13 +98,14 @@ export async function DELETE(
 
     await deleteApp(numericId)
     await logActivity({
-      adminId: admin.id,
-      username: admin.username,
+      adminId: gate.admin.id,
+      username: gate.admin.username,
       action: 'delete',
       entityType: 'app',
       entityName: existing?.name ?? `aplikasi #${numericId}`,
       entityId: numericId,
     })
+    revalidateKatalog()
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 })

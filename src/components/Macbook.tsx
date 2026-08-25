@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Pencil, Check, ShieldCheck, Move } from "lucide-react";
+import { ROLE_LABEL, type Role } from "@/lib/roles";
 
 // ── Design tokens ──────────────────────────────────────────────
 // Frame   : graphite / gunmetal (#1c1d20 → #0c0d0f)
@@ -7,7 +8,7 @@ import { Pencil, Check, ShieldCheck, Move } from "lucide-react";
 //           deep charcoal mist in dark mode (#1a1c22 → #0f1115)
 // Card    : porcelain white (light) / graphite surface (dark), hairline border
 // Accent  : deep teal (#0d9488) — signals "verified / active", not the usual
-//           terracotta/indigo defaults
+//           terracotta/blue defaults
 // Type    : system sans, tight tracking on labels, mono for the role tag
 //
 // NOTE: dark-mode variants below assume the host app toggles Tailwind's
@@ -221,8 +222,8 @@ export default function MacBookProfileMockup({
                 {/* body */}
                 <div className="pt-5 pb-5 px-5">
                   <div className="flex items-center gap-1.5 mb-4">
-                    <ShieldCheck className="h-3.5 w-3.5 text-blue-600 dark:text-indigo-400" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-blue-600 dark:text-indigo-400">
+                    <ShieldCheck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">
                       Akun terverifikasi
                     </span>
                   </div>
@@ -234,7 +235,7 @@ export default function MacBookProfileMockup({
                   />
                   <Field
                     label="Role"
-                    value={fields.role}
+                    value={ROLE_LABEL[fields.role as Role] ?? fields.role}
                     onChange={() => {}}
                     disabled
                   />
@@ -253,7 +254,7 @@ export default function MacBookProfileMockup({
                         justSaved
                           ? "bg-blue-600 text-white"
                           : isDirty
-                            ? "bg-[#111827] dark:bg-blue-600 text-white hover:bg-[#1f2937] dark:hover:bg-indigo-500 active:scale-[0.98]"
+                            ? "bg-[#111827] dark:bg-blue-600 text-white hover:bg-[#1f2937] dark:hover:bg-blue-500 active:scale-[0.98]"
                             : "bg-[#f1f3f5] dark:bg-white/[0.06] text-[#9aa3ae] dark:text-[#7d838d] cursor-default"
                       }`}
                   >

@@ -1,4 +1,4 @@
-import type { AppEnv, AppStatus } from '@/types'
+import type { AppEnv, AppStatus, ChangelogKind } from '@/types'
 
 // Batas panjang SELARAS dengan kolom DB (schema.supabase.sql ↔ schema.mysql.sql).
 // Nilai yang melebihi batas kolom akan ditolak di sini dengan pesan jelas,
@@ -19,6 +19,15 @@ export const LIMITS = {
   maxTech: 30,
   logEntity: 200, // activity_logs.entity_name VARCHAR(200)
   logDetail: 1000, // activity_logs.details TEXT (batas kewajaran)
+  // --- Field katalog publik (migrasi 07) ---
+  slug: 220, // apps.slug VARCHAR(220)
+  logoUrl: 2000, // apps.logo_url TEXT
+  contactName: 100, // apps.contact_name VARCHAR(100)
+  contactEmail: 150, // apps.contact_email VARCHAR(150)
+  contactPhone: 30, // apps.contact_phone VARCHAR(30)
+  caption: 200, // app_screenshots.caption VARCHAR(200)
+  maxScreenshots: 12,
+  changelogNotes: 2000, // app_changelogs.notes TEXT (batas kewajaran)
 } as const
 
 export const VALID_STATUS = ['active', 'inactive', 'maintenance', 'deprecated'] as const
@@ -106,6 +115,15 @@ export interface AppInput {
   tech: string[]
   server: string
   database: string
+  // Field katalog publik — opsional, lihat catatan di validateAppInput.
+  slug?: string
+  isPublic?: boolean
+  logoUrl?: string | null
+  goLiveDate?: string | null
+  contactName?: string | null
+  contactEmail?: string | null
+  contactPhone?: string | null
+  screenshots?: { url: string; caption: string | null }[]
 }
 
 export function validateAppInput(raw: unknown): Result<AppInput> {
@@ -162,6 +180,55 @@ export function validateAppInput(raw: unknown): Result<AppInput> {
     }
   }
 
+  // --- Field katalog publik (migrasi 07) ---
+  // SEMUANYA OPSIONAL. Validator ini juga dipakai jalur impor
+  // (/api/admin/data), dan berkas backup yang dibuat sebelum migrasi 07
+  // tidak punya field ini — mewajibkannya akan membuat seluruh backup
+  // lama gagal diimpor.
+
+  const logoUrl = cleanString(body.logoUrl, LIMITS.logoUrl)
+  if (logoUrl && !isHttpUrl(logoUrl)) {
+    return { ok: false, error: 'URL logo harus diawali http:// atau https://' }
+  }
+
+  const contactEmail = cleanString(body.contactEmail, LIMITS.contactEmail)
+  // Pemeriksaan bentuk seadanya: ada satu '@', ada titik di domain, tanpa
+  // spasi. Validasi email yang "sempurna" lewat regex adalah jebakan —
+  // yang penting salah ketik jelas tertangkap.
+  if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+    return { ok: false, error: 'Format email kontak tidak valid' }
+  }
+
+  const goLiveDate = cleanString(body.goLiveDate, 10)
+  if (goLiveDate && !/^\d{4}-\d{2}-\d{2}$/.test(goLiveDate)) {
+    return { ok: false, error: 'Tanggal go-live harus berformat YYYY-MM-DD' }
+  }
+
+  const screenshots: { url: string; caption: string | null }[] = []
+  if (body.screenshots !== undefined) {
+    if (!Array.isArray(body.screenshots)) {
+      return { ok: false, error: 'Screenshot harus berupa daftar' }
+    }
+    if (body.screenshots.length > LIMITS.maxScreenshots) {
+      return {
+        ok: false,
+        error: `Screenshot maksimal ${LIMITS.maxScreenshots} gambar`,
+      }
+    }
+    for (const raw of body.screenshots) {
+      const item = (raw ?? {}) as Record<string, unknown>
+      const shotUrl = cleanString(item.url, LIMITS.url)
+      if (!shotUrl) continue // baris kosong di form — abaikan diam-diam
+      if (!isHttpUrl(shotUrl)) {
+        return { ok: false, error: 'URL screenshot harus diawali http:// atau https://' }
+      }
+      screenshots.push({
+        url: shotUrl,
+        caption: cleanString(item.caption, LIMITS.caption) || null,
+      })
+    }
+  }
+
   return {
     ok: true,
     value: {
@@ -177,6 +244,72 @@ export function validateAppInput(raw: unknown): Result<AppInput> {
       tech,
       server: cleanString(body.server, LIMITS.server) || '-',
       database: cleanString(body.database, LIMITS.database) || '-',
+      slug: cleanString(body.slug, LIMITS.slug) || undefined,
+      isPublic: Boolean(body.isPublic),
+      logoUrl: logoUrl || null,
+      goLiveDate: goLiveDate || null,
+      contactName: cleanString(body.contactName, LIMITS.contactName) || null,
+      contactEmail: contactEmail || null,
+      contactPhone: cleanString(body.contactPhone, LIMITS.contactPhone) || null,
+      screenshots,
+    },
+  }
+}
+
+// --- Changelog aplikasi (tabel app_changelogs, migrasi 08) ---
+const VALID_CHANGELOG_KINDS = ['feature', 'fix', 'security', 'other'] as const
+
+/** Hasil validasi entri changelog (appId boleh kosong saat memperbarui). */
+export interface ChangelogDraft {
+  appId: number | undefined
+  version: string
+  releasedAt: string | null
+  kind: ChangelogKind
+  notes: string | null
+  isPublic: boolean
+}
+
+export function validateChangelogInput(raw: unknown): Result<ChangelogDraft> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ok: false, error: 'Body tidak valid' }
+  }
+  const body = raw as Record<string, unknown>
+
+  // appId wajib saat membuat; boleh tidak ada saat memperbarui.
+  let appId: number | undefined
+  if (body.appId !== undefined && body.appId !== null && body.appId !== '') {
+    appId = Number(body.appId)
+    if (!Number.isInteger(appId) || (appId as number) <= 0) {
+      return { ok: false, error: 'Aplikasi tidak valid' }
+    }
+  }
+
+  const version = cleanString(body.version, LIMITS.version)
+  if (!version) return { ok: false, error: 'Versi wajib diisi' }
+
+  const releasedAt = cleanString(body.releasedAt, 10)
+  if (releasedAt && !/^\d{4}-\d{2}-\d{2}$/.test(releasedAt)) {
+    return { ok: false, error: 'Tanggal rilis harus berformat YYYY-MM-DD' }
+  }
+
+  const kindRaw = String(body.kind ?? 'other')
+  if (!(VALID_CHANGELOG_KINDS as readonly string[]).includes(kindRaw)) {
+    return { ok: false, error: `Jenis perubahan tidak dikenal: ${kindRaw || '(kosong)'}` }
+  }
+
+  const notes = cleanString(body.notes, LIMITS.changelogNotes)
+
+  return {
+    ok: true,
+    value: {
+      // isPublic default TRUE — catatan versi pada dasarnya layak dipublikasi;
+      // menandai internal adalah tindakan sadar dari admin.
+      isPublic: body.isPublic === undefined ? true : Boolean(body.isPublic),
+      appId,
+      version,
+      releasedAt: releasedAt || null,
+      kind: kindRaw as ChangelogKind,
+      notes: notes || null,
     },
   }
 }
@@ -186,6 +319,15 @@ export function validateCategoryName(raw: unknown): Result<string> {
   const name = cleanString(raw, LIMITS.category)
   if (!name) return { ok: false, error: 'Nama kategori wajib diisi' }
   return { ok: true, value: name }
+}
+
+/**
+ * Escape karakter khusus pola ILIKE (`%`, `_`, `\`) sebelum disisipkan ke
+ * filter pencarian log. Tanpa ini, pengguna yang mengetik "100%" mencari
+ * "100 diikuti apa pun" — hasil pencarian jadi salah tanpa pesan error.
+ */
+export function escapeIlike(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&')
 }
 
 // --- Teknologi ---

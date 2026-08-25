@@ -1,4 +1,4 @@
-/* Hallmark · component: apps-directory · genre: modern-minimal · accent: indigo
+/* Hallmark · component: apps-directory · genre: modern-minimal · accent: blue
  * redesign: card (rule-top progress · neutral initials tile · status dot) ·
  *           filter (category chip row + status segmented + env select) ·
  *           search (⌘K focus · clear · scoped-to-active-page) ·
@@ -13,10 +13,12 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { App } from '@/types';
 import { getCustomTechnologies } from '@/lib/customTech';
+import { STATUS_DOT, STATUS_LABEL, STATUS_OPTIONS, getInitials, statusStyle } from '@/lib/appMeta';
 import DetailDrawer from './DetailDrawer';
 import AddAppModal from './AddAppModal';
 import SearchAutocomplete from './SearchAutocomplete';
 import { useRealtime } from '@/hooks/useRealtime';
+import { useRole } from '@/hooks/useRole';
 
 interface AppsPageProps {
   apps: App[];
@@ -25,14 +27,6 @@ interface AppsPageProps {
   initialAppId?: number | null;
 }
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'Semua' },
-  { value: 'active', label: 'Aktif' },
-  { value: 'maintenance', label: 'Pemeliharaan' },
-  { value: 'inactive', label: 'Nonaktif' },
-  { value: 'deprecated', label: 'Dihentikan' },
-] as const;
-
 const ENV_OPTIONS = [
   { value: 'all', label: 'Semua Lingkungan' },
   { value: 'production', label: 'Produksi' },
@@ -40,39 +34,15 @@ const ENV_OPTIONS = [
   { value: 'development', label: 'Development' },
 ] as const;
 
-const STATUS_DOT: Record<string, string> = {
-  active: 'bg-emerald-500',
-  maintenance: 'bg-amber-500',
-  inactive: 'bg-slate-400 dark:bg-slate-500',
-  deprecated: 'bg-rose-500',
-};
+const VISIBILITY_OPTIONS = [
+  { value: 'all', label: 'Semua Visibilitas' },
+  { value: 'public', label: 'Publik' },
+  { value: 'internal', label: 'Internal' },
+] as const;
 
-const STATUS_LABEL: Record<string, string> = {
-  active: 'Aktif',
-  maintenance: 'Pemeliharaan',
-  inactive: 'Nonaktif',
-  deprecated: 'Dihentikan',
-};
-
-// Warna kartu mengikuti STATUS; tinggi fill mengikuti persentase progres.
-function statusStyle(status: string) {
-  switch (status) {
-    case 'active':
-      return { rule: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', fill: 'bg-emerald-500/10 dark:bg-emerald-500/15' };
-    case 'maintenance':
-      return { rule: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400', fill: 'bg-amber-500/10 dark:bg-amber-500/15' };
-    case 'deprecated':
-      return { rule: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', fill: 'bg-rose-500/10 dark:bg-rose-500/15' };
-    default: // inactive / status tak dikenal
-      return { rule: 'bg-slate-400', text: 'text-slate-500 dark:text-slate-400', fill: 'bg-slate-400/10 dark:bg-slate-400/15' };
-  }
-}
-
-const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').substring(0, 2);
-
-const chipBase = "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900 cursor-pointer";
-const chipInactive = "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400";
-const chipActive = "bg-indigo-600 text-white border-transparent";
+const chipBase = "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900 cursor-pointer";
+const chipInactive = "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400";
+const chipActive = "bg-blue-600 text-white border-transparent";
 const chipCount = "tabular-nums";
 const hideScrollbar = "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
@@ -80,6 +50,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [envFilter, setEnvFilter] = useState('all');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'internal'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentView, setCurrentView] = useState<'grid' | 'list'>('grid');
   const [selectedApp, setSelectedApp] = useState<App | null>(null);
@@ -90,6 +61,11 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
   const [customTech, setCustomTech] = useState<string[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingApp, setEditingApp] = useState<App | null>(null);
+
+  // Peran sesi — hanya untuk menyembunyikan tombol yang pasti ditolak server
+  // (requireRole). Bukan pengaman; penegakan tetap di route API.
+  const role = useRole();
+  const canManage = role !== 'viewer';
   const searchRef = useRef<HTMLInputElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
@@ -214,7 +190,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
   // ke halaman pagination yang sedang aktif.
   useEffect(() => {
     setCurrentPage(1); // eslint-disable-line react-hooks/set-state-in-effect
-  }, [categoryFilter, statusFilter, envFilter, pageSize]);
+  }, [categoryFilter, statusFilter, envFilter, visibilityFilter, pageSize]);
 
   // Buka drawer detail langsung saat datang dari halaman Kategori (?app=<id>).
   useEffect(() => {
@@ -249,11 +225,12 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
     window.dispatchEvent(new Event('cardViewChange'));
   };
 
-  const hasFilters = categoryFilter !== 'all' || statusFilter !== 'all' || envFilter !== 'all' || searchQuery !== '';
+  const hasFilters = categoryFilter !== 'all' || statusFilter !== 'all' || envFilter !== 'all' || visibilityFilter !== 'all' || searchQuery !== '';
   const clearFilters = () => {
     setCategoryFilter('all');
     setStatusFilter('all');
     setEnvFilter('all');
+    setVisibilityFilter('all');
     setSearchQuery('');
   };
 
@@ -261,6 +238,8 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
     if (categoryFilter !== 'all' && app.category !== categoryFilter) return false;
     if (statusFilter !== 'all' && app.status !== statusFilter) return false;
     if (envFilter !== 'all' && app.env !== envFilter) return false;
+    if (visibilityFilter === 'public' && !app.isPublic) return false;
+    if (visibilityFilter === 'internal' && app.isPublic) return false;
     if (searchQuery && !app.name.toLowerCase().includes(searchQuery.toLowerCase()) && !app.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
@@ -325,7 +304,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
           <div className="inline-flex items-center rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 gap-0.5">
             <button
               onClick={() => setView('grid')}
-              className={`p-1.5 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${currentView === 'grid' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              className={`p-1.5 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${currentView === 'grid' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               aria-label="Tampilan grid"
               title="Tampilan grid"
             >
@@ -333,19 +312,21 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
             </button>
             <button
               onClick={() => setView('list')}
-              className={`p-1.5 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${currentView === 'list' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              className={`p-1.5 rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${currentView === 'list' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
               aria-label="Tampilan daftar"
               title="Tampilan daftar"
             >
               <i className="fas fa-list"></i>
             </button>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="h-10 bg-indigo-600 text-white px-4 rounded-lg hover:bg-indigo-700 inline-flex items-center gap-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900 transition-colors"
-          >
-            <i className="fas fa-plus text-xs"></i> <span className="hidden sm:inline">Tambah</span>
-          </button>
+          {canManage && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="h-10 bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 inline-flex items-center gap-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900 transition-colors"
+            >
+              <i className="fas fa-plus text-xs"></i> <span className="hidden sm:inline">Tambah</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -390,7 +371,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
                 <button
                   key={opt.value}
                   onClick={() => setStatusFilter(opt.value)}
-                  className={`px-2.5 py-1.5 text-xs whitespace-nowrap rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${statusFilter === opt.value ? 'bg-indigo-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                  className={`px-2.5 py-1.5 text-xs whitespace-nowrap rounded-md transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${statusFilter === opt.value ? 'bg-blue-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                   aria-pressed={statusFilter === opt.value}
                 >
                   {opt.label}
@@ -401,10 +382,23 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               <select
                 value={envFilter}
                 onChange={(e) => setEnvFilter(e.target.value)}
-                className="h-9 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 text-xs text-slate-700 dark:text-slate-200 outline-none transition-shadow focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 cursor-pointer"
+                className="h-9 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 text-xs text-slate-700 dark:text-slate-200 outline-none transition-shadow focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer"
                 aria-label="Filter lingkungan"
               >
                 {ENV_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <i className="fas fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
+            </div>
+            <div className="relative">
+              <select
+                value={visibilityFilter}
+                onChange={(e) => setVisibilityFilter(e.target.value as 'all' | 'public' | 'internal')}
+                className="h-9 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 text-xs text-slate-700 dark:text-slate-200 outline-none transition-shadow focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer"
+                aria-label="Filter visibilitas katalog publik"
+              >
+                {VISIBILITY_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
@@ -426,7 +420,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <i className="fas fa-rotate-left"></i> Hapus filter
             </button>
@@ -444,14 +438,14 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
           <div className="mt-4 inline-flex items-center gap-2 flex-wrap justify-center">
             <button
               onClick={() => setSearchQuery('')}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <i className="fas fa-rotate-left"></i> Hapus pencarian
             </button>
             {safePage > 1 && (
               <button
                 onClick={() => goToPage(safePage - 1)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <i className="fas fa-chevron-left"></i> Cari di halaman sebelumnya
               </button>
@@ -459,7 +453,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
             {safePage < totalPages && (
               <button
                 onClick={() => goToPage(safePage + 1)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 Cari di halaman berikutnya <i className="fas fa-arrow-right"></i>
               </button>
@@ -472,7 +466,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
             <article
               key={app.id}
               onClick={() => setSelectedApp(app)}
-              className="group relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/60 overflow-hidden cursor-pointer transition-all duration-200 hover:border-indigo-300 dark:hover:border-indigo-700/60 hover:shadow-md hover:shadow-slate-200/60 dark:hover:shadow-black/20 motion-reduce:transition-none flex flex-col"
+              className="group relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700/60 overflow-hidden cursor-pointer transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-700/60 hover:shadow-md hover:shadow-slate-200/60 dark:hover:shadow-black/20 motion-reduce:transition-none flex flex-col"
             >
               {/* Isi latar progres: makin tinggi, makin penuh warna mengisi kartu */}
               <div aria-hidden="true" className={`absolute inset-x-0 bottom-0 pointer-events-none transition-[height] duration-500 motion-reduce:transition-none ${statusStyle(app.status).fill}`} style={{ height: `${app.progress}%` }}></div>
@@ -482,7 +476,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               <div className="relative p-5 pt-6 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm font-semibold transition-colors group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    <div className="w-10 h-10 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm font-semibold transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                       {getInitials(app.name)}
                     </div>
                     <div className="min-w-0">
@@ -504,7 +498,18 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               </div>
               <div className="relative px-5 py-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
                 <span className="text-slate-400 dark:text-slate-500 capitalize truncate">{app.env} · v{app.version}</span>
-                <span className={`font-semibold tabular-nums shrink-0 ${statusStyle(app.status).text}`}>{app.progress}%</span>
+                <span className="flex items-center gap-2 shrink-0">
+                  {/* Penanda visibilitas: satu-satunya cara melihat aplikasi mana
+                      yang tampil publik tanpa membuka drawer. */}
+                  <span
+                    title={app.isPublic ? 'Tampil di katalog publik' : 'Hanya terlihat admin'}
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${app.isPublic ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}
+                  >
+                    <i className={`fas ${app.isPublic ? 'fa-globe' : 'fa-lock'} text-[9px]`}></i>
+                    {app.isPublic ? 'Publik' : 'Internal'}
+                  </span>
+                  <span className={`font-semibold tabular-nums ${statusStyle(app.status).text}`}>{app.progress}%</span>
+                </span>
               </div>
             </article>
           ))}
@@ -515,9 +520,9 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
             <div
               key={app.id}
               onClick={() => setSelectedApp(app)}
-              className="group flex items-center gap-4 bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/60 rounded-lg px-4 py-3 cursor-pointer transition-all duration-200 hover:border-indigo-300 dark:hover:border-indigo-700/60 motion-reduce:transition-none"
+              className="group flex items-center gap-4 bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/60 rounded-lg px-4 py-3 cursor-pointer transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-700/60 motion-reduce:transition-none"
             >
-              <div className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-xs font-semibold transition-colors group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+              <div className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-xs font-semibold transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                 {getInitials(app.name)}
               </div>
               <div className="min-w-0 flex-1">
@@ -532,6 +537,13 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
                 {STATUS_LABEL[app.status] ?? app.status}
               </span>
               <span className="hidden lg:block text-xs text-slate-400 dark:text-slate-500 capitalize shrink-0 w-20 text-right">{app.env}</span>
+              <span
+                title={app.isPublic ? 'Tampil di katalog publik' : 'Hanya terlihat admin'}
+                aria-label={app.isPublic ? 'Tampil di katalog publik' : 'Hanya terlihat admin'}
+                className={`hidden sm:inline-flex items-center justify-center w-5 h-5 rounded-full shrink-0 ${app.isPublic ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'}`}
+              >
+                <i className={`fas ${app.isPublic ? 'fa-globe' : 'fa-lock'} text-[10px]`}></i>
+              </span>
               <div className="flex items-center gap-2 shrink-0 w-24">
                 <div className="flex-1 h-1 rounded-full bg-slate-100 dark:bg-slate-700/50 overflow-hidden">
                   <div className={`h-full ${statusStyle(app.status).rule}`} style={{ width: `${app.progress}%` }}></div>
@@ -559,7 +571,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               <button
                 onClick={() => goToPage(safePage - 1)}
                 disabled={safePage <= 1}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Halaman sebelumnya"
               >
                 <i className="fas fa-chevron-left text-[10px]"></i>
@@ -572,7 +584,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
                     key={item}
                     onClick={() => goToPage(item)}
                     aria-current={item === safePage ? 'page' : undefined}
-                    className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${item === safePage ? 'bg-indigo-600 text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
+                    className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${item === safePage ? 'bg-blue-600 text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400'}`}
                     aria-label={`Halaman ${item}`}
                   >
                     {item}
@@ -582,7 +594,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               <button
                 onClick={() => goToPage(safePage + 1)}
                 disabled={safePage >= totalPages}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Halaman berikutnya"
               >
                 <i className="fas fa-chevron-right text-[10px]"></i>
@@ -608,7 +620,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
                   const v = Number(e.target.value);
                   if (v && v !== safePage) goToPage(Math.round(v));
                 }}
-                className="w-12 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-center text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 tabular-nums"
+                className="w-12 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-center text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 tabular-nums"
                 aria-label="Lompat ke halaman"
               />
             </div>
@@ -618,7 +630,7 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-8 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-2.5 pr-7 text-xs text-slate-600 dark:text-slate-300 outline-none transition-shadow focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 cursor-pointer"
+                className="h-8 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-2.5 pr-7 text-xs text-slate-600 dark:text-slate-300 outline-none transition-shadow focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer"
                 aria-label="Jumlah aplikasi per halaman"
               >
                 {[6, 9, 12, 18, 24].map(n => (

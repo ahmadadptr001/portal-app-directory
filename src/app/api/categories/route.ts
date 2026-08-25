@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCategory, getAllCategories, getSessionAdmin, getSessionAdminId, logActivity } from '@/lib/apps'
+import { createCategory, getAllCategories, getSessionAdminId, logActivity } from '@/lib/apps'
+import { requireRole } from '@/lib/roles'
+import { revalidateKatalog } from '@/lib/public'
 import { validateCategoryName } from '@/lib/validate'
 import { assertSameOrigin, isBodyTooLarge } from '@/lib/security'
 
@@ -24,10 +26,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ukuran body terlalu besar' }, { status: 413 })
   }
 
-  const admin = await getSessionAdmin(request)
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Mutasi butuh peran `admin` ke atas — ditegakkan di SERVER (roles.ts).
+  const gate = await requireRole(request, 'admin')
+  if (!gate.ok) return gate.response
 
   try {
     let body: unknown
@@ -44,13 +45,14 @@ export async function POST(request: NextRequest) {
 
     const category = await createCategory(parsed.value)
     await logActivity({
-      adminId: admin.id,
-      username: admin.username,
+      adminId: gate.admin.id,
+      username: gate.admin.username,
       action: 'create',
       entityType: 'category',
       entityName: category.name,
       entityId: category.id,
     })
+    revalidateKatalog()
     return NextResponse.json({ category }, { status: 201 })
   } catch (e) {
     const message = (e as Error)?.message ?? ''

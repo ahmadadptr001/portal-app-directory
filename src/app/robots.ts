@@ -1,15 +1,27 @@
 import type { MetadataRoute } from 'next'
-
-const BASE_URL = 'https://portal-app-directory.vercel.app'
+import { SITE_URL } from '@/lib/branding'
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
-      allow: '/',
-      disallow: ['/api/', '/dashboard/', '/apps/', '/categories/', '/settings/'],
+      allow: ['/', '/katalog'],
+      // Tanpa garis miring penutup — SENGAJA.
+      // `'/dashboard/'` hanya memblokir path DI BAWAH /dashboard/, sementara
+      // /dashboard sendiri tetap boleh dirayapi. Bentuk tanpa garis miring
+      // menutup keduanya.
+      disallow: [
+        '/api',
+        '/dashboard',
+        '/apps',
+        '/categories',
+        '/technologies',
+        '/logs',
+        '/settings',
+        '/login',
+      ],
     },
-    sitemap: `${BASE_URL}/sitemap.xml`,
-    host: BASE_URL,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   }
 }

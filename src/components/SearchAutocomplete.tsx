@@ -81,10 +81,10 @@ export default function SearchAutocomplete<T>({
     return filtered.slice(0, maxSuggestions);
   }, [items, getLabel, normalized, maxSuggestions, minChars]);
 
-  // Jaga indeks sorotan tetap valid saat daftar saran menyusut.
-  useEffect(() => {
-    if (highlighted >= suggestions.length) setHighlighted(-1);
-  }, [highlighted, suggestions.length]);
+  // Indeks sorotan yang valid DITURUNKAN saat render (derived state), bukan
+  // ditulis balik lewat effect — daftar saran menyusut pun sorotan otomatis
+  // gugur tanpa render berantai (react-hooks/set-state-in-effect).
+  const activeIndex = highlighted >= 0 && highlighted < suggestions.length ? highlighted : -1;
 
   // Tutup dropdown saat klik di luar komponen.
   useEffect(() => {
@@ -119,7 +119,7 @@ export default function SearchAutocomplete<T>({
     } else if (e.key === "Enter") {
       if (isOpen && suggestions.length > 0) {
         e.preventDefault();
-        selectItem(suggestions[highlighted >= 0 ? highlighted : 0]);
+        selectItem(suggestions[activeIndex >= 0 ? activeIndex : 0]);
       }
     } else if (e.key === "Escape") {
       setIsOpen(false);
@@ -137,7 +137,7 @@ export default function SearchAutocomplete<T>({
         role="combobox"
         aria-expanded={isOpen && suggestions.length > 0}
         aria-controls={isOpen && suggestions.length > 0 ? `${id}-listbox` : undefined}
-        aria-activedescendant={highlighted >= 0 ? `${id}-option-${highlighted}` : undefined}
+        aria-activedescendant={activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined}
         aria-label={ariaLabel}
         value={value}
         onChange={(e) => {
@@ -179,12 +179,12 @@ export default function SearchAutocomplete<T>({
                 key={i}
                 role="option"
                 id={`${id}-option-${i}`}
-                aria-selected={i === highlighted}
+                aria-selected={i === activeIndex}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selectItem(item)}
                 onMouseEnter={() => setHighlighted(i)}
                 className={`px-3 py-2 text-sm cursor-pointer truncate transition-colors ${
-                  i === highlighted
+                  i === activeIndex
                     ? "bg-accent-soft text-accent"
                     : "text-ink-2"
                 }`}

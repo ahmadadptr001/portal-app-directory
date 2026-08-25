@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getSessionAdminId } from '@/lib/apps'
+import { SESSION_COOKIE, getSessionAdminId, logActivity } from '@/lib/apps'
+import { revokeOtherSessions } from '@/lib/admins'
 import { validatePasswordChange } from '@/lib/validate'
 import { assertSameOrigin, isBodyTooLarge } from '@/lib/security'
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     const { data: admin, error } = await supabaseAdmin
       .from('admins')
-      .select('password_hash')
+      .select('username, password_hash')
       .eq('id', adminId)
       .single()
     if (error || !admin) {
@@ -55,6 +56,27 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       return NextResponse.json({ error: 'Gagal memperbarui password' }, { status: 500 })
     }
+
+    // Kata sandi baru harus berarti sesi lama mati: pencuri yang sudah
+    // menyimpan token (XSS, perangkat hilang) terlempar otomatis. Sesi
+    // PEMINTA dipertahankan supaya ia tidak ter-log-out sendiri.
+    const currentToken = request.cookies.get(SESSION_COOKIE)?.value ?? null
+    try {
+      await revokeOtherSessions(adminId, currentToken)
+    } catch (e) {
+      // Best-effort — kegagalan pencabutan tidak boleh membuat klien mengira
+      // ganti sandi gagal dan mencobanya lagi dengan sandi lama.
+      console.error('[profile/password] Gagal mencabut sesi lain:', e)
+    }
+
+    await logActivity({
+      adminId,
+      username: admin.username,
+      action: 'update',
+      entityType: 'system',
+      entityName: 'kata sandi',
+      details: 'Kata sandi diubah; sesi perangkat lain dicabut',
+    })
 
     return NextResponse.json({ success: true })
   } catch {

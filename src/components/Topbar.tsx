@@ -8,6 +8,7 @@ import { useRealtime } from '@/hooks/useRealtime';
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { createPortal } from 'react-dom';
 import MacBookProfileMockup from '@/components/Macbook';
+import { ROLE_LABEL, type Role } from '@/lib/roles';
 
 interface TopbarProps {
   title: string;
@@ -54,7 +55,7 @@ export default function Topbar({ title, toggleSidebar, isSidebarOpen, isDark, to
   const [showProfile, setShowProfile] = useState(false);
   const [showMacbook, setShowMacbook] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [user, setUser] = useState({ id: 0, username: '', role: 'Administrator', createdAt: '' });
+  const [user, setUser] = useState({ id: 0, username: '', role: '', createdAt: '' });
 
   // Data aplikasi untuk notifikasi + status "sudah dibaca" (disimpan di localStorage).
   const [apps, setApps] = useState<App[]>([]);
@@ -185,7 +186,9 @@ export default function Topbar({ title, toggleSidebar, isSidebarOpen, isDark, to
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-sm font-medium text-slate-800 dark:text-slate-100 leading-tight">{user.username}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{user.role}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
+                {ROLE_LABEL[user.role as Role] ?? user.role}
+              </p>
             </div>
             <i className="fas fa-chevron-down text-xs text-slate-400 hidden sm:block"></i>
           </button>
@@ -197,10 +200,41 @@ export default function Topbar({ title, toggleSidebar, isSidebarOpen, isDark, to
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{user.username}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.role}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {ROLE_LABEL[user.role as Role] ?? user.role}
+                  </p>
                 </div>
               </div>
               <div className="py-1">
+                {/* Jalan pulang ke sisi publik. Sejak `/` menjadi beranda
+                    portal publik (bukan lagi redirect ke /dashboard), admin
+                    butuh jalan untuk memeriksa hasil terbitannya seperti yang
+                    dilihat warga. Dibuka di tab baru supaya pekerjaan di
+                    dasbor tidak hilang. */}
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowProfile(false)}
+                  className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors"
+                >
+                  <i className="fas fa-globe w-4 text-slate-400"></i>
+                  <span className="flex-1">Beranda Publik</span>
+                  <i className="fas fa-arrow-up-right-from-square text-[9px] text-slate-300 dark:text-slate-500"></i>
+                </a>
+                <a
+                  href="/katalog"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowProfile(false)}
+                  className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors"
+                >
+                  <i className="fas fa-list w-4 text-slate-400"></i>
+                  <span className="flex-1">Katalog Publik</span>
+                  <i className="fas fa-arrow-up-right-from-square text-[9px] text-slate-300 dark:text-slate-500"></i>
+                </a>
+              </div>
+              <div className="border-t border-slate-100 dark:border-slate-700 py-1">
                 <button onClick={() => { setShowMacbook(true); setShowProfile(false); }} className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-3 transition-colors">
                   <i className="fas fa-user w-4 text-slate-400"></i> Profil Saya
                 </button>
@@ -221,7 +255,7 @@ export default function Topbar({ title, toggleSidebar, isSidebarOpen, isDark, to
                 >
                   <i className={`${isDark ? 'fas fa-sun' : 'fas fa-moon'} w-4 text-slate-400`}></i>
                   <span className="flex-1">{isDark ? 'Mode Terang' : 'Mode Gelap'}</span>
-                  <span className={`w-8 h-4.5 rounded-full relative transition-colors ${isDark ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                  <span className={`w-8 h-4.5 rounded-full relative transition-colors ${isDark ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${isDark ? 'translate-x-3.5' : 'translate-x-0'}`}></span>
                   </span>
                 </button>

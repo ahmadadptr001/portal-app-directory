@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useLayoutEffect, useState } from 'react';
 import Link from 'next/link';
+import type { Role } from '@/lib/roles';
 
 interface SidebarProps {
   activePage: string;
@@ -17,14 +18,22 @@ const navItems = [
   { id: 'categories', icon: 'fas fa-tags', label: 'Kategori' },
   { id: 'technologies', icon: 'fas fa-microchip', label: 'Teknologi' },
   { id: 'logs', icon: 'fas fa-clock-rotate-left', label: 'Log Aktivitas' },
+  { id: 'system', icon: 'fas fa-heart-pulse', label: 'Kesehatan Sistem' },
+  { id: 'users', icon: 'fas fa-users-gear', label: 'Akun & Keamanan' },
   { id: 'settings', icon: 'fas fa-cog', label: 'Pengaturan' },
 ];
+
+/** Menu yang tidak berguna bagi `viewer` karena API-nya menolak peran itu. */
+const VIEWER_HIDDEN = new Set(['system', 'users']);
 
 export default function Sidebar({ activePage, isOpen, toggle, appCount, appEnv }: SidebarProps) {
   const navListRef = useRef<HTMLUListElement>(null);
   const barRef = useRef<HTMLSpanElement>(null);
   const [barTop, setBarTop] = useState(4);
   const [dbOnline, setDbOnline] = useState(true);
+  // Peran sesi (dari endpoint yang sama dengan cek koneksi) — dipakai hanya
+  // untuk menyembunyikan menu yang pasti ditolak server bagi viewer.
+  const [role, setRole] = useState<Role | null>(null);
   const isProd = appEnv === 'production';
   const envLabel = isProd ? 'Production' : 'Development';
 
@@ -34,7 +43,15 @@ export default function Sidebar({ activePage, isOpen, toggle, appCount, appEnv }
     const check = async () => {
       try {
         const res = await fetch('/api/profile', { method: 'GET' });
-        if (alive) setDbOnline(res.ok);
+        if (!alive) return;
+        setDbOnline(res.ok);
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          const r = data?.role;
+          if (alive && (r === 'superadmin' || r === 'admin' || r === 'viewer')) {
+            setRole(r as Role);
+          }
+        }
       } catch {
         if (alive) setDbOnline(false);
       }
@@ -43,6 +60,11 @@ export default function Sidebar({ activePage, isOpen, toggle, appCount, appEnv }
     const t = setInterval(check, 30000);
     return () => { alive = false; clearInterval(t); };
   }, []);
+
+  const visibleItems =
+    role === 'viewer'
+      ? navItems.filter((item) => !VIEWER_HIDDEN.has(item.id))
+      : navItems;
 
   // Posisikan indikator tepat di tengah item aktif berdasarkan posisi layout nyata,
   // sehingga selalu presisi di semua state (terbuka/tertutup) dan semua font.
@@ -100,7 +122,7 @@ export default function Sidebar({ activePage, isOpen, toggle, appCount, appEnv }
             className="absolute left-0 w-1 h-9 bg-blue-600 rounded-full -ml-3 transition-all duration-300 ease-in-out"
             style={{ top: `${barTop}px` }}
           />
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <li key={item.id} className="list-none">
               <Link
                 href={`/${item.id}`}

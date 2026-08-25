@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionAdminId } from '@/lib/apps'
+import { sanitizeRole } from '@/lib/roles'
 import { supabaseAdmin } from '@/lib/supabase'
 import { validateUsername } from '@/lib/validate'
 import { assertSameOrigin, isBodyTooLarge } from '@/lib/security'
@@ -11,9 +12,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Kolom `role` ada sejak migrasi 08. Dulu nilainya DI-HARDCODE
+    // 'Administrator' di sini — semua akun (termasuk viewer) tampil sebagai
+    // administrator. Sekarang peran asli dibaca dari DB.
     const { data, error } = await supabaseAdmin
       .from('admins')
-      .select('id, username, created_at')
+      .select('id, username, role, created_at')
       .eq('id', adminId)
       .single()
 
@@ -24,7 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       id: data.id,
       username: data.username,
-      role: 'Administrator',
+      role: sanitizeRole((data as { role?: unknown }).role),
       createdAt: data.created_at
     })
   } catch {

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtime } from "@/hooks/useRealtime";
+import { ROLE_LABEL, type Role } from "@/lib/roles";
 import { App } from "@/types";
 
 interface SettingsPageProps {
@@ -13,7 +14,7 @@ interface Status {
   text: string;
 }
 
-const ic = "w-full bg-slate-50/80 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all disabled:opacity-60";
+const ic = "w-full bg-slate-50/80 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:opacity-60";
 const lc = "block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5";
 
 function SectionCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
@@ -75,6 +76,11 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
 
   // --- Info sistem ---
   const [dbOnline, setDbOnline] = useState(true);
+
+  // Import/Restore & Reset menggantikan SELURUH data dan sekarang dijaga
+  // `requireRole('superadmin')` di server — sembunyikan kartunya untuk
+  // peran lain agar tidak menampilkan tombol yang pasti 403.
+  const isSuperadmin = profile?.role === "superadmin";
 
   const refreshCounts = useCallback(async () => {
     try {
@@ -353,7 +359,7 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
           <div className="min-w-0">
             <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{profile?.username ?? "Memuat..."}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {profile?.role ?? "-"} · Anggota sejak {memberSince}
+              {profile ? (ROLE_LABEL[profile.role as Role] ?? profile.role) : "-"} · Anggota sejak {memberSince}
             </p>
           </div>
         </div>
@@ -373,7 +379,7 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
               <button
                 onClick={saveUsername}
                 disabled={savingUsername || !usernameDraft.trim()}
-                className="h-9 px-4 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2 shrink-0"
+                className="h-9 px-4 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2 shrink-0"
               >
                 {savingUsername && <i className="fas fa-spinner fa-spin text-xs"></i>}
                 {savingUsername ? "Menyimpan..." : "Simpan"}
@@ -444,7 +450,7 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
             <button
               onClick={toggleTheme}
               aria-pressed={isDark}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isDark ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-600"}`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isDark ? "bg-blue-600" : "bg-slate-200 dark:bg-slate-600"}`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDark ? "translate-x-6" : "translate-x-1"}`} />
             </button>
@@ -460,7 +466,7 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
             <button
               onClick={toggleCardView}
               aria-pressed={cardView === "list"}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cardView === "list" ? "bg-indigo-600" : "bg-slate-200 dark:bg-slate-600"}`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cardView === "list" ? "bg-blue-600" : "bg-slate-200 dark:bg-slate-600"}`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cardView === "list" ? "translate-x-6" : "translate-x-1"}`} />
             </button>
@@ -472,8 +478,8 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
       <SectionCard title="Manajemen Data" icon="fas fa-database">
         <div className="space-y-3">
           {/* Backup */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-100 dark:border-indigo-800/40">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-50 dark:from-blue-900/20 dark:to-blue-900/20 border border-blue-100 dark:border-blue-800/40">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
               <i className="fas fa-cloud-arrow-up"></i>
             </div>
             <div className="flex-1 min-w-0">
@@ -483,7 +489,7 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
             </div>
             <button
               onClick={handleBackup}
-              className="h-9 px-4 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors shrink-0"
+              className="h-9 px-4 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-blue-300 dark:hover:border-blue-700 transition-colors shrink-0"
             >
               Backup
             </button>
@@ -509,48 +515,52 @@ export default function SettingsPage({ appEnv }: SettingsPageProps) {
             </button>
           </div>
 
-          {/* Import */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20 border border-sky-100 dark:border-sky-800/40">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
-              <i className="fas fa-file-import"></i>
+          {/* Import — hanya superadmin (menggantikan seluruh data). */}
+          {isSuperadmin && (
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20 border border-sky-100 dark:border-sky-800/40">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+                <i className="fas fa-file-import"></i>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-700 dark:text-slate-200">Import / Restore</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Pulihkan dari file JSON — menggantikan data saat ini</p>
+                <FieldStatus status={importStatus} />
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={handleImportFile}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="h-9 px-4 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-sky-400 dark:hover:border-sky-600 transition-colors shrink-0"
+              >
+                Pilih File
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-700 dark:text-slate-200">Import / Restore</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Pulihkan dari file JSON — menggantikan data saat ini</p>
-              <FieldStatus status={importStatus} />
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={handleImportFile}
-            />
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="h-9 px-4 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-sky-400 dark:hover:border-sky-600 transition-colors shrink-0"
-            >
-              Pilih File
-            </button>
-          </div>
+          )}
 
-          {/* Reset */}
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 border border-rose-100 dark:border-rose-800/40">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
-              <i className="fas fa-trash-can"></i>
+          {/* Reset — hanya superadmin (wewenang "reset data" di roles.ts). */}
+          {isSuperadmin && (
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 border border-rose-100 dark:border-rose-800/40">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+                <i className="fas fa-trash-can"></i>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-700 dark:text-slate-200">Hapus Semua Data</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Kosongkan aplikasi & kategori — tidak bisa dibatalkan</p>
+                <FieldStatus status={resetStatus} />
+              </div>
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="h-9 px-4 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:border-rose-400 dark:hover:border-rose-600 transition-colors shrink-0"
+              >
+                Reset
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-700 dark:text-slate-200">Hapus Semua Data</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Kosongkan aplikasi & kategori — tidak bisa dibatalkan</p>
-              <FieldStatus status={resetStatus} />
-            </div>
-            <button
-              onClick={() => setShowResetModal(true)}
-              className="h-9 px-4 rounded-lg text-sm font-medium bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:border-rose-400 dark:hover:border-rose-600 transition-colors shrink-0"
-            >
-              Reset
-            </button>
-          </div>
+          )}
         </div>
       </SectionCard>
 

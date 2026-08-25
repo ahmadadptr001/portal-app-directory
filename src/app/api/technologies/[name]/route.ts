@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteTechnology, getSessionAdmin, logActivity, updateTechnology } from '@/lib/apps'
+import { deleteTechnology, logActivity, updateTechnology } from '@/lib/apps'
+import { requireRole } from '@/lib/roles'
+import { revalidateKatalog } from '@/lib/public'
 import { supabaseAdmin } from '@/lib/supabase'
 import { validateTechnologyName } from '@/lib/validate'
 import { assertSameOrigin, isBodyTooLarge } from '@/lib/security'
@@ -15,10 +17,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'Ukuran body terlalu besar' }, { status: 413 })
   }
 
-  const admin = await getSessionAdmin(request)
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Mutasi butuh peran `admin` ke atas — ditegakkan di SERVER (roles.ts).
+  const gate = await requireRole(request, 'admin')
+  if (!gate.ok) return gate.response
 
   try {
     const { name } = await params
@@ -53,13 +54,14 @@ export async function PATCH(
 
     await updateTechnology(name, newName)
     await logActivity({
-      adminId: admin.id,
-      username: admin.username,
+      adminId: gate.admin.id,
+      username: gate.admin.username,
       action: 'update',
       entityType: 'technology',
       entityName: newName,
       details: `Ganti nama dari "${name}"`,
     })
+    revalidateKatalog()
     return NextResponse.json({ success: true, name: newName })
   } catch {
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 })
@@ -74,21 +76,21 @@ export async function DELETE(
     return NextResponse.json({ error: 'Permintaan lintas-situs ditolak' }, { status: 403 })
   }
 
-  const admin = await getSessionAdmin(request)
-  if (!admin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Mutasi butuh peran `admin` ke atas — ditegakkan di SERVER (roles.ts).
+  const gate = await requireRole(request, 'admin')
+  if (!gate.ok) return gate.response
 
   try {
     const { name } = await params
     await deleteTechnology(name)
     await logActivity({
-      adminId: admin.id,
-      username: admin.username,
+      adminId: gate.admin.id,
+      username: gate.admin.username,
       action: 'delete',
       entityType: 'technology',
       entityName: name,
     })
+    revalidateKatalog()
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 })

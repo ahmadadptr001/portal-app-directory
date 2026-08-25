@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { App } from "@/types";
+import { STATUS_LABEL } from "@/lib/appMeta";
 import { useRealtime } from "@/hooks/useRealtime";
 import {
   ComposedChart,
@@ -23,13 +24,6 @@ import {
 interface DashboardPageProps {
   apps: App[];
 }
-
-const STATUS_LABEL: Record<string, string> = {
-  active: "Aktif",
-  maintenance: "Pemeliharaan",
-  inactive: "Nonaktif",
-  deprecated: "Dihentikan",
-};
 
 const tooltipStyle = {
   backgroundColor: "#0f172a",
@@ -166,7 +160,7 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
 
   const ringCards = [
     { value: activeRate, label: "Aplikasi Aktif", color: "#22c55e", track: "#dcfce7" },
-    { value: productionRate, label: "Berjalan di Produksi", color: "#6366f1", track: "#e0e7ff" },
+    { value: productionRate, label: "Berjalan di Produksi", color: "#2563eb", track: "#dbeafe" },
     { value: avgProgress, label: "Rata-rata Progress", color: "#f59e0b", track: "#fef3c7" },
   ];
 
@@ -196,7 +190,7 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
     { name: "50–74%", count: localApps.filter((a) => a.progress >= 50 && a.progress < 75).length },
     { name: "75–100%", count: localApps.filter((a) => a.progress >= 75).length },
   ];
-  const progressBarColors = ["#f43f5e", "#f59e0b", "#10b981", "#6366f1"];
+  const progressBarColors = ["#f43f5e", "#f59e0b", "#10b981", "#2563eb"];
 
   const statusPie = [
     { name: "Aktif", value: activeApps, color: "#22c55e" },
@@ -236,7 +230,7 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
           className="pointer-events-none select-none absolute -right-4 -bottom-12 w-52 sm:w-64 opacity-15 hidden sm:block"
         />
         <div className="relative p-6 sm:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300">Pemerintah Provinsi Sulawesi Tenggara</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">Pemerintah Provinsi Sulawesi Tenggara</p>
           <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-white tracking-tight">Portal Direktori Aplikasi</h1>
           <p className="mt-1 text-sm text-slate-300 max-w-xl">Metrik aplikasi yang dikelola di lingkungan Kominfo Provinsi Sulawesi Tenggara.</p>
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl">
@@ -271,8 +265,8 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
                 <ComposedChart data={bandData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="bandFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0.05} />
+                      <stop offset="0%" stopColor="#2563eb" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#2563eb" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="bulan" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={{ stroke: "#475569" }} tickLine={false} />
@@ -280,8 +274,8 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend wrapperStyle={{ fontSize: "12px", color: "#94a3b8" }} />
                   <Area type="monotone" dataKey="min" stackId="band" stroke="none" fill="transparent" legendType="none" tooltipType="none" />
-                  <Area type="monotone" dataKey="rentang" name="Rentang" stackId="band" stroke="#818cf8" strokeOpacity={0.6} fill="url(#bandFill)" />
-                  <Line type="monotone" dataKey="nilai" name="Aktual" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3, fill: "#6366f1" }} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="rentang" name="Rentang" stackId="band" stroke="#60a5fa" strokeOpacity={0.6} fill="url(#bandFill)" />
+                  <Line type="monotone" dataKey="nilai" name="Aktual" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3, fill: "#2563eb" }} activeDot={{ r: 5 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -343,7 +337,7 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={80} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#94a3b8", opacity: 0.12 }} />
-                <Bar dataKey="value" name="Jumlah" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={16} />
+                <Bar dataKey="value" name="Jumlah" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -359,7 +353,7 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
               {recentApps.map((app) => (
                 <li key={app.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
                       {app.name.split(" ").map((n) => n[0]).join("").substring(0, 2)}
                     </div>
                     <div className="min-w-0">
@@ -383,10 +377,10 @@ export default function DashboardPage({ apps: initialApps }: DashboardPageProps)
               <div key={app.id}>
                 <div className="flex justify-between text-sm font-medium mb-1.5">
                   <span className="text-slate-700 dark:text-slate-200 truncate mr-3">{app.name}</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-semibold shrink-0">{app.progress}%</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold shrink-0">{app.progress}%</span>
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                  <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${app.progress}%` }}></div>
+                  <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${app.progress}%` }}></div>
                 </div>
               </div>
             ))}

@@ -79,13 +79,13 @@ export default function LoginPage() {
             )}
             <div>
               <label className="text-xs font-medium text-slate-700 mb-1.5 block">Username</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nama pengguna" className="w-full bg-white/70 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all" autoFocus />
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nama pengguna" className="w-full bg-white/70 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" autoFocus />
             </div>
             <div>
               <label className="text-xs font-medium text-slate-700 mb-1.5 block">Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/70 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all" />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-white/70 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" />
             </div>
-            <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-medium text-sm py-2.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-indigo-600/25">
+            <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-medium text-sm py-2.5 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-blue-600/25">
               {loading ? <><i className="fas fa-spinner fa-spin"></i> Memproses...</> : <><i className="fas fa-right-to-bracket"></i> Masuk</>}
             </button>
           </form>

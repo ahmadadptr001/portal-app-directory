@@ -13,7 +13,7 @@ interface LogsPageProps {
 
 const ACTION_META: Record<ActivityAction, { icon: string; label: string; chip: string }> = {
   create: { icon: 'fa-plus', label: 'Menambahkan', chip: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
-  update: { icon: 'fa-pen', label: 'Mengubah', chip: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
+  update: { icon: 'fa-pen', label: 'Mengubah', chip: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
   delete: { icon: 'fa-trash', label: 'Menghapus', chip: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' },
   import: { icon: 'fa-file-import', label: 'Mengimpor', chip: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400' },
   reset: { icon: 'fa-triangle-exclamation', label: 'Meriset', chip: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
@@ -24,6 +24,7 @@ const ENTITY_LABEL: Record<ActivityEntity, string> = {
   category: 'kategori',
   technology: 'teknologi',
   system: 'sistem',
+  changelog: 'riwayat versi',
 };
 
 function describe(log: ActivityLog): string {
@@ -97,9 +98,11 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
     setCurrentPage(1); // eslint-disable-line react-hooks/set-state-in-effect
   }, [searchQuery, actionFilter, typeFilter, pageSize]);
 
-  // Muat ulang saat filter/halaman berubah.
+  // Muat ulang saat filter/halaman berubah. `load` async — semua setState
+  // terjadi SETELAH await fetch, tapi aturan lint tidak bisa melihat itu;
+  // pengecualian eksplisit (pola yang sama dengan baris 98 & SystemPage).
   useEffect(() => {
-    load();
+    load(); // eslint-disable-line react-hooks/set-state-in-effect
   }, [load]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -147,7 +150,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="h-10 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 text-sm text-slate-700 dark:text-slate-200 outline-none transition-shadow focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 cursor-pointer"
+              className="h-10 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 text-sm text-slate-700 dark:text-slate-200 outline-none transition-shadow focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer"
               aria-label="Filter aksi"
             >
               <option value="all">Semua aksi</option>
@@ -163,7 +166,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-10 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 text-sm text-slate-700 dark:text-slate-200 outline-none transition-shadow focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 cursor-pointer"
+              className="h-10 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 text-sm text-slate-700 dark:text-slate-200 outline-none transition-shadow focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer"
               aria-label="Filter jenis entitas"
             >
               <option value="all">Semua entitas</option>
@@ -171,6 +174,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
               <option value="category">Kategori</option>
               <option value="technology">Teknologi</option>
               <option value="system">Sistem</option>
+              <option value="changelog">Riwayat Versi</option>
             </select>
             <i className="fas fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
           </div>
@@ -191,7 +195,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
           {hasFilters && (
             <button
               onClick={() => { setSearchQuery(''); setActionFilter('all'); setTypeFilter('all'); }}
-              className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="mt-4 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               <i className="fas fa-rotate-left"></i> Hapus filter
             </button>
@@ -223,7 +227,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
                             {log.entityType === 'app' && log.entityId != null ? (
                               <button
                                 onClick={() => router.push(`/apps?app=${log.entityId}`)}
-                                className="text-sm text-slate-700 dark:text-slate-200 text-left hover:text-indigo-600 dark:hover:text-indigo-400 underline-offset-2 hover:underline transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+                                className="text-sm text-slate-700 dark:text-slate-200 text-left hover:text-blue-600 dark:hover:text-blue-400 underline-offset-2 hover:underline transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
                               >
                                 {sentence}
                               </button>
@@ -272,7 +276,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
               <button
                 onClick={() => goToPage(safePage - 1)}
                 disabled={safePage <= 1}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Halaman sebelumnya"
               >
                 <i className="fas fa-chevron-left text-[10px]"></i>
@@ -285,7 +289,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
                     key={item}
                     onClick={() => goToPage(item)}
                     aria-current={item === safePage ? 'page' : undefined}
-                    className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${item === safePage ? 'bg-indigo-600 text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
+                    className={`h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${item === safePage ? 'bg-blue-600 text-white' : 'border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400'}`}
                     aria-label={`Halaman ${item}`}
                   >
                     {item}
@@ -295,7 +299,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
               <button
                 onClick={() => goToPage(safePage + 1)}
                 disabled={safePage >= totalPages}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-300 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:pointer-events-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 aria-label="Halaman berikutnya"
               >
                 <i className="fas fa-chevron-right text-[10px]"></i>
@@ -306,7 +310,7 @@ export default function LogsPage({ logs: initialLogs, total: initialTotal }: Log
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
-                className="h-8 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-2.5 pr-7 text-xs text-slate-600 dark:text-slate-300 outline-none transition-shadow focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 cursor-pointer"
+                className="h-8 appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-2.5 pr-7 text-xs text-slate-600 dark:text-slate-300 outline-none transition-shadow focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer"
                 aria-label="Jumlah log per halaman"
               >
                 {[15, 25, 50].map(n => (

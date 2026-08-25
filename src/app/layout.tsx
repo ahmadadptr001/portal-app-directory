@@ -2,23 +2,28 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ClientLayout from '@/components/ClientLayout';
 import { plusJakartaSans } from './fonts';
-import { getAllApps } from '@/lib/apps';
+import { getAppCount } from '@/lib/apps';
+import { APP_NAME, GOV_NAME, REGION_NAME, SITE_URL } from '@/lib/branding';
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://portal-app-directory.vercel.app"),
-  title: "Portal Direktori Aplikasi | Provinsi Sulawesi Tenggara",
+  metadataBase: new URL(SITE_URL),
+  title: `${APP_NAME} | ${REGION_NAME}`,
   description:
-    "Portal Direktori Aplikasi Pemerintah Provinsi Sulawesi Tenggara — kelola dan jelajahi daftar aplikasi daerah dengan mudah.",
+    `${APP_NAME} ${GOV_NAME} — jelajahi dan kelola daftar aplikasi daerah dengan mudah.`,
   openGraph: {
-    title: "Portal Direktori Aplikasi | Provinsi Sulawesi Tenggara",
-    description: "Kelola dan jelajahi daftar aplikasi Pemerintah Provinsi Sulawesi Tenggara.",
+    title: `${APP_NAME} | ${REGION_NAME}`,
+    description: `Jelajahi daftar aplikasi ${GOV_NAME}.`,
     type: "website",
     locale: "id_ID",
   },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const apps = await getAllApps();
+  // Hanya JUMLAH aplikasi yang dibutuhkan (badge sidebar), bukan seluruh
+  // barisnya. Dulu di sini `getAllApps()` — satu pembacaan tabel penuh plus
+  // SELURUH relasi tech pada SETIAP request. Sejak beranda & katalog terbuka
+  // untuk publik, itu akan berjalan untuk setiap pengunjung.
+  const appCount = await getAppCount();
   return (
     // suppressHydrationWarning pada <html>/<body>: React tidak mengklaim penuh
     // atribut kedua elemen ini, sehingga mutasi dari luar (inline script tema di
@@ -37,7 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col font-sans text-slate-800 dark:text-slate-200" style={{ fontFamily: "var(--font-plus-jakarta), system-ui, sans-serif" }}>
-        <ClientLayout appCount={apps.length} appEnv={process.env.NODE_ENV}>{children}</ClientLayout>
+        <ClientLayout appCount={appCount} appEnv={process.env.NODE_ENV}>{children}</ClientLayout>
         {/* Mount point resmi untuk ekstensi browser. Elemen ini statis dan tidak
             pernah di-render ulang oleh React, jadi node yang disuntik ekstensi
             DI SINI (setelah hidrasi) akan bertahan. Ekstensi WAJIB memakai wadah

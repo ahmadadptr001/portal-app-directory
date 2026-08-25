@@ -41,7 +41,7 @@ export default function DetailModal({ app, onClose }: DetailModalProps) {
               <span className="font-medium text-slate-700 dark:text-slate-200">{app.progress}%</span>
             </div>
             <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-              <div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${app.progress}%` }}></div>
+              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${app.progress}%` }}></div>
             </div>
           </div>
           <div>
@@ -52,7 +52,7 @@ export default function DetailModal({ app, onClose }: DetailModalProps) {
               ))}
             </div>
           </div>
-          <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm mt-4">
+          <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm mt-4">
             <i className="fas fa-external-link-alt mr-2"></i> Buka Aplikasi
           </a>
         </div>

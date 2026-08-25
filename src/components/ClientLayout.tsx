@@ -47,12 +47,16 @@ export default function ClientLayout({ children, appCount, appEnv }: { children:
     categories: 'Kategori',
     technologies: 'Teknologi',
     logs: 'Log Aktivitas',
+    system: 'Kesehatan Sistem',
+    users: 'Akun & Keamanan',
     settings: 'Pengaturan'
   };
   const pageTitle = pageTitleMap[activePage] || 'Dashboard';
 
-  // Halaman tanpa chrome sidebar/topbar: login, help, dan URL tak dikenal (404)
-  const isAppPage = ['/dashboard', '/apps', '/categories', '/technologies', '/logs', '/settings'].includes(pathname);
+  // Halaman tanpa chrome sidebar/topbar: login, help, rute publik, dan URL tak
+  // dikenal (404). Halaman admin BARU wajib didaftarkan di sini — kalau tidak,
+  // ia dirender telanjang tanpa sidebar dan tidak bisa dijangkau dari menu.
+  const isAppPage = ['/dashboard', '/apps', '/categories', '/technologies', '/logs', '/system', '/users', '/settings'].includes(pathname);
   if (!isAppPage) {
     return (
       // Pakai variant `dark:` (keyed ke class .dark di <html>, di-set inline
