@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { App, Screenshot } from '@/types';
 import { LIMITS } from '@/lib/validate';
+import ImageDropzone from './ImageDropzone';
 
 interface AddAppModalProps {
   onClose: () => void;
@@ -303,15 +304,48 @@ export default function AddAppModal({ onClose, onAdd, nextId, initialApp, catego
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={lc}>URL Logo</label>
-                <input name="logoUrl" value={form.logoUrl} onChange={handleChange} className={ic} placeholder="https://..." disabled={saving} />
+            <div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={lc}>Unggah Logo</label>
+                  <ImageDropzone
+                    ariaLabel="Unggah logo aplikasi"
+                    compact
+                    hint="PNG/JPG/WebP/GIF"
+                    disabled={saving}
+                    onUploaded={(urls) => {
+                      if (urls[0]) setForm(prev => ({ ...prev, logoUrl: urls[0] }));
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className={lc}>URL Logo</label>
+                  <input name="logoUrl" value={form.logoUrl} onChange={handleChange} className={ic} placeholder="https://..." disabled={saving} />
+                  <p className={hint}>Atau tempel URL gambar dari luar.</p>
+                </div>
               </div>
-              <div>
-                <label className={lc}>Tanggal Go-Live</label>
-                <input name="goLiveDate" type="date" value={form.goLiveDate} onChange={handleChange} className={ic} disabled={saving} />
-              </div>
+              {form.logoUrl.trim() && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-10 h-10 shrink-0 rounded-lg border border-slate-200/60 dark:border-slate-600/50 bg-slate-100 dark:bg-slate-700/50 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- URL remote dari admin: host sembarang, tidak bisa didaftarkan di images.remotePatterns */}
+                    <img src={form.logoUrl} alt="" aria-hidden="true" className="w-full h-full object-contain p-0.5" />
+                  </div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate flex-1">{form.logoUrl}</p>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, logoUrl: '' }))}
+                    disabled={saving}
+                    aria-label="Hapus logo"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    <i className="fas fa-trash text-xs"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className={lc}>Tanggal Go-Live</label>
+              <input name="goLiveDate" type="date" value={form.goLiveDate} onChange={handleChange} className={ic} disabled={saving} />
             </div>
 
             <div>
@@ -330,13 +364,46 @@ export default function AddAppModal({ onClose, onAdd, nextId, initialApp, catego
               <label className={lc}>
                 Screenshot <span className="font-normal text-slate-400">(maks. {LIMITS.maxScreenshots})</span>
               </label>
+
+              <ImageDropzone
+                ariaLabel="Unggah screenshot aplikasi"
+                multiple
+                disabled={saving || form.screenshots.length >= LIMITS.maxScreenshots}
+                hint={`PNG/JPG/WebP/GIF · maks. ${Math.round(LIMITS.uploadMaxBytes / (1024 * 1024))} MB per berkas · bisa banyak sekaligus`}
+                onUploaded={(urls) => {
+                  setForm(prev => ({
+                    ...prev,
+                    screenshots: [
+                      ...prev.screenshots,
+                      ...urls.map(url => ({ url, caption: '' })),
+                    ].slice(0, LIMITS.maxScreenshots),
+                  }));
+                }}
+              />
+
+              <div className="flex items-center gap-2 mt-3 mb-2">
+                <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700"></span>
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500">atau tempel URL</span>
+                <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700"></span>
+              </div>
+
               {form.screenshots.length === 0 ? (
                 <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Belum ada screenshot.</p>
               ) : (
                 <div className="space-y-2">
                   {form.screenshots.map((s, i) => (
                     <div key={i} className="flex gap-2 items-start">
-                      <div className="flex-1 space-y-1.5">
+                      {s.url.trim() ? (
+                        <div className="w-14 h-14 shrink-0 rounded-lg border border-slate-200/60 dark:border-slate-600/50 bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- URL remote dari admin: host sembarang, tidak bisa didaftarkan di images.remotePatterns */}
+                          <img src={s.url} alt="" aria-hidden="true" loading="lazy" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-14 h-14 shrink-0 rounded-lg border border-dashed border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-300 dark:text-slate-600">
+                          <i className="fas fa-image"></i>
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-1.5 min-w-0">
                         <input
                           value={s.url}
                           onChange={(e) => setShot(i, 'url', e.target.value)}
@@ -374,9 +441,8 @@ export default function AddAppModal({ onClose, onAdd, nextId, initialApp, catego
                 className="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
               >
                 <i className="fas fa-plus text-[10px]"></i>
-                Tambah screenshot
+                Tambah baris URL
               </button>
-              <p className={hint}>Tempel URL gambar yang sudah online. Belum ada fitur unggah berkas.</p>
             </div>
           </div>
 

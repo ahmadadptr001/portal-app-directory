@@ -28,7 +28,24 @@ export const LIMITS = {
   caption: 200, // app_screenshots.caption VARCHAR(200)
   maxScreenshots: 12,
   changelogNotes: 2000, // app_changelogs.notes TEXT (batas kewajaran)
+  // --- Unggah gambar (Supabase Storage, /api/upload) ---
+  uploadMaxBytes: 5 * 1024 * 1024, // 5 MB per berkas
 } as const
+
+/**
+ * Mime gambar yang boleh diunggah → ekstensi penyimpanan.
+ *
+ * SVG SENGAJA tidak ada: SVG bisa membawa <script>, dan meskipun dirender
+ * lewat <img> (konteks non-eksekusi), memperkecil permukaan serangan lebih
+ * aman daripada bergantung pada asumsi konteks render. Admin yang benar-benar
+ * butuh SVG masih bisa menempel URL eksternal secara manual.
+ */
+export const VALID_IMAGE_MIME: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+}
 
 export const VALID_STATUS = ['active', 'inactive', 'maintenance', 'deprecated'] as const
 export const VALID_ENV = ['production', 'staging', 'development'] as const
