@@ -20,6 +20,30 @@ import SearchAutocomplete from './SearchAutocomplete';
 import { useRealtime } from '@/hooks/useRealtime';
 import { useRole } from '@/hooks/useRole';
 
+/**
+ * Logo aplikasi dengan fallback inisial.
+ *
+ * Logo adalah URL REMOTE yang diisi admin dengan host sembarang — dirender
+ * <img> biasa (bukan next/image) karena mendaftarkan remotePatterns wildcard
+ * akan mengubah image optimizer menjadi proxy fetch terbuka (konvensi
+ * CLAUDE.md, sama seperti halaman publik).
+ */
+function AppLogo({ app }: { app: App }) {
+  if (app.logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- URL remote dari admin: host sembarang, tidak bisa didaftarkan di images.remotePatterns
+      <img
+        src={app.logoUrl}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        className="w-full h-full object-contain p-1"
+      />
+    );
+  }
+  return <span className="leading-none">{getInitials(app.name)}</span>;
+}
+
 interface AppsPageProps {
   apps: App[];
   categories: string[];
@@ -476,8 +500,8 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               <div className="relative p-5 pt-6 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm font-semibold transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                      {getInitials(app.name)}
+                    <div className="w-10 h-10 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-sm font-semibold transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 overflow-hidden">
+                      <AppLogo app={app} />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate">{app.name}</h3>
@@ -522,8 +546,8 @@ export default function AppsPage({ apps, categories, technologies, initialAppId 
               onClick={() => setSelectedApp(app)}
               className="group flex items-center gap-4 bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700/60 rounded-lg px-4 py-3 cursor-pointer transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-700/60 motion-reduce:transition-none"
             >
-              <div className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-xs font-semibold transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                {getInitials(app.name)}
+              <div className="w-9 h-9 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-700/50 border border-slate-200/60 dark:border-slate-600/50 flex items-center justify-center text-slate-500 dark:text-slate-300 text-xs font-semibold transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400 overflow-hidden">
+                <AppLogo app={app} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{app.name}</p>
