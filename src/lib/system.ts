@@ -15,7 +15,15 @@
  */
 import os from 'os'
 import { supabaseAdmin } from '@/lib/supabase'
-import { isSupabaseConfigured } from '@/lib/apps'
+
+// Sengaja TIDAK mengimpor `isSupabaseConfigured` dari '@/lib/apps': modul itu
+// kini menyeret dependensi Node (fs via media.ts), sedangkan fungsi murni di
+// berkas ini (formatBytes/formatUptime) dipakai Client Component (SystemPage).
+function sbConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
 
 export interface CpuInfo {
   model: string
@@ -139,7 +147,7 @@ function readLoad(): LoadInfo {
 
 /** Ping database dengan query paling murah + ukur latensinya. */
 async function checkDb(): Promise<DbHealth> {
-  if (!isSupabaseConfigured()) {
+  if (!sbConfigured()) {
     return { configured: false, reachable: false, latencyMs: null, error: 'Belum dikonfigurasi' }
   }
   const started = Date.now()

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ActivityAction, ActivityEntity, ActivityLog } from '@/lib/apps';
+import type { ActivityAction, ActivityEntity, ActivityLog } from '@/lib/apps';
 import { useRealtime } from '@/hooks/useRealtime';
 import SearchAutocomplete from './SearchAutocomplete';
 

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Pencil, Check, ShieldCheck, Move } from "lucide-react";
-import { ROLE_LABEL, type Role } from "@/lib/roles";
+import { ROLE_LABEL, type Role } from "@/lib/rolesShared";
 
 // ── Design tokens ──────────────────────────────────────────────
 // Frame   : graphite / gunmetal (#1c1d20 → #0c0d0f)

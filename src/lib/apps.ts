@@ -5,6 +5,7 @@ import { App, AppEnv, AppStatus, Screenshot } from '@/types'
 import { APP_DATA } from '@/data/initialData'
 import { LIMITS, VALID_ENV, VALID_STATUS, escapeIlike } from '@/lib/validate'
 import { buildUniqueSlug } from '@/lib/slug'
+import { gcMedia } from '@/lib/media'
 
 /** Peran admin. Definisi lengkap + penegakannya ada di `src/lib/roles.ts`;
  *  tipe-nya diulang di sini agar tidak terjadi impor melingkar
@@ -410,10 +411,18 @@ export async function updateApp(id: number, input: NewAppInput): Promise<App> {
   // berubah bila admin mengisinya sendiri di form.
   const { data: existing } = await supabaseAdmin
     .from('apps')
-    .select('slug')
+    .select('slug, logo_url')
     .eq('id', id)
     .maybeSingle()
   const currentSlug = (existing as { slug?: string | null } | null)?.slug ?? null
+
+  // Gambar lama dicatat SEBELUM ditimpa — setelah update sukses, berkas yang
+  // tidak lagi dipakai aplikasi mana pun dibersihkan dari storage (gcMedia).
+  const oldLogoUrl = (existing as { logo_url?: string | null } | null)?.logo_url ?? null
+  const { data: oldShotRows } = await supabaseAdmin
+    .from('app_screenshots')
+    .select('url')
+    .eq('app_id', id)
 
   const desired = String(input.slug ?? '').trim()
   const slug =
@@ -465,12 +474,37 @@ export async function updateApp(id: number, input: NewAppInput): Promise<App> {
 
   await replaceScreenshots(id, input.screenshots)
 
+  // Gambar lama yang tidak lagi ada di input (diganti/dihapus) → hapus
+  // berkas fisiknya bila tak dipakai aplikasi lain. Best-effort.
+  const newUrls = new Set<string>(
+    [sanitizeUrl(input.logoUrl) ?? '', ...(input.screenshots ?? []).map((s) => sanitizeUrl(s?.url) ?? '')]
+      .filter(Boolean)
+  )
+  const staleUrls = [oldLogoUrl, ...(oldShotRows ?? []).map((s) => s.url as string)].filter(
+    (u): u is string => u !== null && u !== '' && !newUrls.has(u)
+  )
+  await gcMedia(staleUrls)
+
   return mapDbRow(row, tech, input.screenshots ?? [])
 }
 
 export async function deleteApp(id: number): Promise<void> {
+  // URL gambar milik app dikumpulkan SEBELUM baris & relasinya terhapus.
+  const { data: logoRow } = await supabaseAdmin
+    .from('apps')
+    .select('logo_url')
+    .eq('id', id)
+    .maybeSingle()
+  const { data: shotRows } = await supabaseAdmin
+    .from('app_screenshots')
+    .select('url')
+    .eq('app_id', id)
+
   const { error } = await supabaseAdmin.from('apps').delete().eq('id', id)
   if (error) throw error
+
+  // Berkas fisik di storage ikut dibersihkan bila tak dipakai siapa pun.
+  await gcMedia([logoRow?.logo_url ?? null, ...(shotRows ?? []).map((s) => s.url as string)])
 }
 
 // ---------------------------------------------------------------------------

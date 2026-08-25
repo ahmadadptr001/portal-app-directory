@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useLayoutEffect, useState } from 'react';
 import Link from 'next/link';
-import type { Role } from '@/lib/roles';
+import type { Role } from '@/lib/rolesShared';
 
 interface SidebarProps {
   activePage: string;

@@ -8,7 +8,7 @@ import { useRealtime } from '@/hooks/useRealtime';
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { createPortal } from 'react-dom';
 import MacBookProfileMockup from '@/components/Macbook';
-import { ROLE_LABEL, type Role } from '@/lib/roles';
+import { ROLE_LABEL, type Role } from '@/lib/rolesShared';
 
 interface TopbarProps {
   title: string;

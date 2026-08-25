@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRealtime } from "@/hooks/useRealtime";
-import { ROLE_LABEL, type Role } from "@/lib/roles";
+import { ROLE_LABEL, type Role } from "@/lib/rolesShared";
 import { App } from "@/types";
 
 interface SettingsPageProps {

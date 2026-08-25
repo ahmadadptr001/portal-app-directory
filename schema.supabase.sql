@@ -16,6 +16,7 @@
 DROP TABLE IF EXISTS activity_logs;
 DROP TABLE IF EXISTS login_logs;
 DROP TABLE IF EXISTS app_changelogs;
+DROP TABLE IF EXISTS media_files;
 DROP TABLE IF EXISTS app_screenshots;
 DROP TABLE IF EXISTS app_tech;
 DROP TABLE IF EXISTS apps;
@@ -244,6 +245,31 @@ CREATE INDEX idx_app_changelogs_app ON app_changelogs(app_id, released_at DESC);
 
 ALTER TABLE app_changelogs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role only" ON app_changelogs
+  FOR ALL USING (auth.role() = 'service_role');
+
+-- ============================================
+-- TABEL MEDIA_FILES — buku besar aset gambar (migrasi 09)
+-- Satu baris per URL gambar. driver:
+--   supabase → bucket app-media (dapat dibersihkan via storage API)
+--   local    → public/uploads (deploy MySQL/Laragon)
+--   external → URL tempelan manual dari luar (tidak pernah di-GC)
+-- ============================================
+CREATE TABLE media_files (
+  id SERIAL PRIMARY KEY,
+  url TEXT NOT NULL UNIQUE,
+  path TEXT,
+  driver VARCHAR(20) NOT NULL DEFAULT 'external',
+  mime VARCHAR(50),
+  size_bytes INTEGER,
+  uploaded_by INTEGER REFERENCES admins(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_media_files_created ON media_files(created_at DESC);
+CREATE INDEX idx_media_files_driver ON media_files(driver);
+
+ALTER TABLE media_files ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role only" ON media_files
   FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================

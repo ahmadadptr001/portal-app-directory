@@ -16,7 +16,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AdminAccount, ActiveSession, LoginLog } from '@/lib/admins';
-import { ROLE_DESCRIPTION, ROLE_LABEL, VALID_ROLES, type Role } from '@/lib/roles';
+import { ROLE_DESCRIPTION, ROLE_LABEL, VALID_ROLES, type Role } from '@/lib/rolesShared';
 import { LIMITS } from '@/lib/validate';
 
 interface Props {

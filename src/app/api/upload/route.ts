@@ -1,25 +1,29 @@
 /**
- * Unggah gambar (logo & screenshot) ke Supabase Storage.
+ * Unggah gambar (logo & screenshot) — DUA DRIVER, pilihan otomatis:
  *
- * Sebelumnya admin harus menyalin URL dari hosting lain — friksi harian yang
- * paling terasa. Kini berkas diunggah langsung (drag & drop di form) ke
- * bucket publik `app-media`.
+ *   1. Supabase Storage (bucket `app-media`, public read) — dipakai bila env
+ *      Supabase terisi. Bucket dibuat otomatis saat unggahan pertama.
+ *   2. Disk lokal `public/uploads/apps/` — dipakai deploy MySQL/Laragon yang
+ *      tidak punya layanan storage. Next.js menyajikan isi `public/` langsung,
+ *      jadi URL `/uploads/apps/<nama>` bisa dimuat tanpa konfigurasi tambahan.
+ *      (Asumsi single-instance yang sama dengan rate limiter: disk lokal tidak
+ *       dibagi antar mesin.)
  *
- * KEPUTUSAN DESAIN:
- *   - Bucket DIBUAT OTOMATIS saat unggahan pertama (idempoten, tanpa migrasi).
- *     Public read diperlukan agar <img> bisa memuatnya tanpa signed URL;
- *     tulis selalu lewat service-role key, jadi RLS tidak jadi masalah.
- *   - Nama berkas ASLI tidak pernah dipakai — path digenerate (timestamp +
- *     random hex) supaya bebas path traversal/karakter aneh dan tabrakan nama.
- *   - Mime di-whitelist TANPA SVG (bisa membawa <script>; lihat catatan
- *     VALID_IMAGE_MIME di validate.ts). Admin masih bisa tempel URL eksternal.
- *   - Deploy MySQL/Laragon: endpoint membalas 503 dengan pesan jelas karena
- *     Storage adalah fitur Supabase; kolom URL manual tetap berfungsi.
+ * Setiap unggahan sukses dicatat ke tabel `media_files` (migrasi 09) — buku
+ * besar aset yang dipakai `gcMedia()` untuk membereskan berkas fisik ketika
+ * aplikasi/gambarnya dihapus.
+ *
+ * Keamanan: requireRole('admin'), same-origin, whitelist mime TANPA SVG
+ * (bisa membawa <script>), maks 5 MB, nama berkas asli tidak pernah
+ * menyentuh path penyimpanan.
  */
 import { randomBytes } from 'crypto'
+import { mkdir, writeFile } from 'fs/promises'
+import path from 'path'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isSupabaseConfigured } from '@/lib/apps'
+import { MEDIA_BUCKET, registerMedia } from '@/lib/media'
 import { requireRole } from '@/lib/roles'
 import { assertSameOrigin, isBodyTooLarge } from '@/lib/security'
 import { LIMITS, VALID_IMAGE_MIME } from '@/lib/validate'
@@ -27,14 +31,14 @@ import { LIMITS, VALID_IMAGE_MIME } from '@/lib/validate'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const BUCKET = 'app-media'
+const LOCAL_UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'apps')
 
 // Buat bucket sekali per proses. Gagal → reset promise agar permintaan
 // berikutnya mencoba lagi (mis. bucket dihapus admin saat proses hidup).
 let bucketPromise: Promise<void> | null = null
 function ensureBucket(): Promise<void> {
   bucketPromise ??= supabaseAdmin.storage
-    .createBucket(BUCKET, { public: true })
+    .createBucket(MEDIA_BUCKET, { public: true })
     .then(({ error }) => {
       if (error) {
         const msg = String(error.message ?? '').toLowerCase()
@@ -52,7 +56,7 @@ function ensureBucket(): Promise<void> {
 /** Unggah sekali; bila bucket ternyata hilang, buat lalu coba SEKALI lagi. */
 async function uploadWithRetry(path: string, bytes: ArrayBuffer, contentType: string) {
   const doUpload = () =>
-    supabaseAdmin.storage.from(BUCKET).upload(path, bytes, {
+    supabaseAdmin.storage.from(MEDIA_BUCKET).upload(path, bytes, {
       contentType,
       cacheControl: '31536000', // aset immutable — nama path unik per unggahan
       upsert: false,
@@ -81,13 +85,6 @@ export async function POST(request: NextRequest) {
   // Mengunggah aset konten = mutasi konten → peran `admin` ke atas.
   const gate = await requireRole(request, 'admin')
   if (!gate.ok) return gate.response
-
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json(
-      { error: 'Unggah berkas hanya tersedia saat portal memakai Supabase Storage. Tempel URL gambar secara manual untuk saat ini.' },
-      { status: 503 }
-    )
-  }
 
   let form: FormData
   try {
@@ -118,18 +115,46 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Nama berkas digenerate penuh — nama asli pengguna tidak pernah menjadi path.
+  const fileName = `${Date.now().toString(36)}-${randomBytes(8).toString('hex')}.${ext}`
+  const bytes = await file.arrayBuffer()
+
   try {
-    await ensureBucket()
+    if (isSupabaseConfigured()) {
+      await ensureBucket()
+      const storagePath = `apps/${fileName}`
 
-    // Path digenerate penuh — nama asli pengguna tidak pernah menyentuh storage.
-    const path = `apps/${Date.now().toString(36)}-${randomBytes(8).toString('hex')}.${ext}`
-    const bytes = await file.arrayBuffer()
+      const error = await uploadWithRetry(storagePath, bytes, file.type)
+      if (error) throw error
 
-    const error = await uploadWithRetry(path, bytes, file.type)
-    if (error) throw error
+      const { data } = supabaseAdmin.storage.from(MEDIA_BUCKET).getPublicUrl(storagePath)
+      const url = data.publicUrl
 
-    const { data } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path)
-    return NextResponse.json({ url: data.publicUrl }, { status: 201 })
+      await registerMedia({
+        url,
+        path: storagePath,
+        driver: 'supabase',
+        mime: file.type,
+        sizeBytes: file.size,
+        uploadedBy: gate.admin.id,
+      })
+      return NextResponse.json({ url }, { status: 201 })
+    }
+
+    // ---- Driver lokal (deploy MySQL/Laragon tanpa Supabase Storage) ----
+    await mkdir(LOCAL_UPLOAD_DIR, { recursive: true })
+    await writeFile(path.join(LOCAL_UPLOAD_DIR, fileName), Buffer.from(bytes))
+    const url = `/uploads/apps/${fileName}`
+
+    await registerMedia({
+      url,
+      path: `apps/${fileName}`,
+      driver: 'local',
+      mime: file.type,
+      sizeBytes: file.size,
+      uploadedBy: gate.admin.id,
+    })
+    return NextResponse.json({ url }, { status: 201 })
   } catch (e) {
     console.error('[upload] Gagal mengunggah berkas:', e)
     return NextResponse.json({ error: 'Gagal mengunggah berkas' }, { status: 500 })

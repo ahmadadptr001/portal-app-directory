@@ -13,7 +13,7 @@
  * endpoint yang sama secara berkala.
  */
 import { useEffect, useState } from 'react'
-import type { Role } from '@/lib/roles'
+import type { Role } from '@/lib/rolesShared'
 
 const CACHE_TTL_MS = 60_000
 

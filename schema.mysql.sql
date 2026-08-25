@@ -16,6 +16,7 @@
 DROP TABLE IF EXISTS activity_logs;
 DROP TABLE IF EXISTS login_logs;
 DROP TABLE IF EXISTS app_changelogs;
+DROP TABLE IF EXISTS media_files;
 DROP TABLE IF EXISTS app_screenshots;
 DROP TABLE IF EXISTS app_tech;
 DROP TABLE IF EXISTS apps;
@@ -206,6 +207,26 @@ CREATE TABLE app_changelogs (
   CONSTRAINT app_changelogs_kind_check
     CHECK (kind IN ('feature', 'fix', 'security', 'other')),
   INDEX idx_app_changelogs_app (app_id, released_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- TABEL MEDIA_FILES — buku besar aset gambar (migrasi 09)
+-- driver: supabase | local (public/uploads, deploy MySQL) | external
+-- ============================================
+CREATE TABLE media_files (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  url TEXT NOT NULL,
+  path TEXT NULL,
+  driver VARCHAR(20) NOT NULL DEFAULT 'external',
+  mime VARCHAR(50) NULL,
+  size_bytes INT NULL,
+  uploaded_by INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_media_files_url (url(255)),
+  CONSTRAINT fk_media_admin FOREIGN KEY (uploaded_by)
+    REFERENCES admins(id) ON DELETE SET NULL,
+  INDEX idx_media_files_created (created_at),
+  INDEX idx_media_files_driver (driver)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
